@@ -14,21 +14,13 @@ Backend da aplicação de totem para venda de produtos e operações de PDV. O p
 ## Estrutura
 
 ```
-src/
-  main.ts                 bootstrap da API
-  app.module.ts
-  config/                 validação de variáveis de ambiente
-  common/                 guards, filters, interceptors, decorators
-  prisma/                 conexão com o banco
-  modules/
-    auth/                 autenticação
-    users/                usuários
-    health/               healthcheck
-prisma/
-  schema.prisma
-  migrations/
-  seed.ts
+src/                      código da API
+config/                   eslint e prettier
+docker/                   postgres local
+prisma/                   schema, migrations e seed
 ```
+
+Na raiz ficam só os arquivos que as ferramentas exigem (`package.json`, `tsconfig`, `nest-cli`, `.gitignore`, `.env.example`).
 
 Papéis previstos: `SUPER_ADMIN`, `ADMIN`, `OPERATOR`, `KIOSK`.
 
@@ -40,7 +32,7 @@ Rotas privadas exigem Bearer token. Rotas públicas usam `@Public()`. Restriçã
 - PostgreSQL 16 (local ou via Docker)
 
 ```bash
-docker compose up -d
+npm run docker:up
 ```
 
 ## Setup
@@ -136,6 +128,8 @@ Authorization: Bearer <accessToken>
 | `npm run prisma:deploy` | aplica migrations |
 | `npm run prisma:seed` | popula o admin inicial |
 | `npm run prisma:studio` | interface do banco |
+| `npm run docker:up` | sobe o PostgreSQL |
+| `npm run docker:down` | derruba o PostgreSQL |
 
 ## Próximos módulos
 

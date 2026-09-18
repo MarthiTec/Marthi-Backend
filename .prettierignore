@@ -1,5 +1,8 @@
 dist
 node_modules
 coverage
+package-lock.json
+prisma/migrations
 *.log
 .env
+.env.*
