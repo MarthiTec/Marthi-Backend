@@ -9,7 +9,11 @@ import { User, UserRole, UserStatus } from '@prisma/client';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
-import { comparePassword, hashToken, parseDurationToMs } from '../../common/utils/crypto';
+import {
+  comparePassword,
+  hashToken,
+  parseDurationToMs,
+} from '../../common/utils/crypto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types/jwt-payload.type';
@@ -68,7 +72,10 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token inválido');
     }
 
-    if (stored.userId !== payload.sub || stored.user.status !== UserStatus.ACTIVE) {
+    if (
+      stored.userId !== payload.sub ||
+      stored.user.status !== UserStatus.ACTIVE
+    ) {
       throw new UnauthorizedException('Refresh token inválido');
     }
 
