@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength } from 'class-validator';
 
-export class RefreshTokenDto {
+export class GoogleLoginDto {
   @ApiProperty()
   @IsString()
-  @MinLength(20)
-  refreshToken!: string;
+  @MinLength(10)
+  idToken!: string;
 }

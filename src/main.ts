@@ -1,18 +1,18 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
   const apiPrefix = config.getOrThrow<string>('API_PREFIX');
-  app.setGlobalPrefix(apiPrefix);
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: [{ path: 'health', method: RequestMethod.GET }],
+  });
 
   app.use(helmet());
 
@@ -36,9 +36,6 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new TransformInterceptor());
-
   if (config.get('SWAGGER_ENABLED') !== 'false') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Marthi Totem API')
@@ -51,8 +48,8 @@ async function bootstrap() {
     SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
   }
 
-  const port = Number(config.get('PORT', 3000));
-  await app.listen(port);
+  const port = Number(config.get('PORT', 8080));
+  await app.listen(port, '0.0.0.0');
 }
 
 void bootstrap();

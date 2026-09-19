@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ErrorCode, statusToErrorCode } from '../errors/api-exception';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -22,7 +23,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
 
-    const message =
+    if (
+      typeof exceptionResponse === 'object' &&
+      exceptionResponse &&
+      'success' in exceptionResponse &&
+      'error' in exceptionResponse
+    ) {
+      response.status(status).json(exceptionResponse);
+      return;
+    }
+
+    const rawMessage =
       typeof exceptionResponse === 'string'
         ? exceptionResponse
         : typeof exceptionResponse === 'object' &&
@@ -31,12 +42,22 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? (exceptionResponse as { message: string | string[] }).message
           : 'Erro interno do servidor';
 
+    const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
+    const details =
+      typeof exceptionResponse === 'object' &&
+      exceptionResponse &&
+      'details' in exceptionResponse
+        ? (exceptionResponse as { details: Record<string, unknown> }).details
+        : {};
+
     response.status(status).json({
       success: false,
-      statusCode: status,
-      message,
-      path: request.url,
-      timestamp: new Date().toISOString(),
+      error: {
+        code: statusToErrorCode(status) ?? ErrorCode.INTERNAL_ERROR,
+        message,
+        details,
+        path: request.url,
+      },
     });
   }
 }

@@ -7,47 +7,568 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  OPERATOR
-  KIOSK
+enum PlanId {
+  start
+  growth
+  scale
+
+  @@map("plan_id")
 }
 
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  BLOCKED
+enum ModuleId {
+  totem
+  presales
+  os
+  erp
+
+  @@map("module_id")
+}
+
+enum DocumentType {
+  cnpj
+  cpf
+
+  @@map("document_type")
+}
+
+enum AuthProvider {
+  google
+  password
+
+  @@map("auth_provider")
+}
+
+enum ProductStatus {
+  active
+  inactive
+
+  @@map("product_status")
+}
+
+enum StockKind {
+  part
+  device
+  supply
+
+  @@map("stock_kind")
+}
+
+enum StockCondition {
+  new
+  used
+  refurbished
+
+  @@map("stock_condition")
+}
+
+enum PaymentType {
+  cash
+  pix
+  debit
+  credit
+  other
+
+  @@map("payment_type")
+}
+
+enum TicketSource {
+  totem
+  manual
+
+  @@map("ticket_source")
+}
+
+enum TicketStatus {
+  open
+  sold
+  cancelled
+
+  @@map("ticket_status")
+}
+
+enum FinanceType {
+  in
+  out
+
+  @@map("finance_type")
+}
+
+enum FinanceSource {
+  manual
+  pos
+  os_part
+  os_purchase
+  os_revenue
+  os_reversal
+
+  @@map("finance_source")
+}
+
+enum OsStatus {
+  open
+  diagnosis
+  waiting
+  progress
+  ready
+  delivered
+  cancelled
+
+  @@map("os_status")
+}
+
+enum OsPriority {
+  low
+  normal
+  high
+
+  @@map("os_priority")
+}
+
+enum AssetDisposition {
+  customer
+  purchased
+  scrapped
+
+  @@map("asset_disposition")
+}
+
+enum OsLineKind {
+  part
+  labor
+
+  @@map("os_line_kind")
+}
+
+enum TotemMode {
+  kiosk
+  catalog
+
+  @@map("totem_mode")
+}
+
+enum SignupStatus {
+  pending
+  contacted
+  converted
+
+  @@map("signup_status")
+}
+
+model Store {
+  id           String       @id
+  tradeName    String       @map("trade_name")
+  legalName    String       @map("legal_name")
+  documentType DocumentType @map("document_type")
+  document     String
+  email        String
+  phone        String
+  zipCode      String       @map("zip_code")
+  street       String
+  number       String
+  complement   String       @default("")
+  district     String
+  city         String
+  state        String       @db.Char(2)
+  segment      String       @default("")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  users             User[]
+  partnerSignups    PartnerSignup[]
+  customers         Customer[]
+  products          Product[]
+  stockItems        StockItem[]
+  priceTables       PriceTable[]
+  paymentMethods    PaymentMethod[]
+  posTickets        PosTicket[]
+  salesOrders       SalesOrder[]
+  financeEntries    FinanceEntry[]
+  workOrders        WorkOrder[]
+  productAttributes ProductAttribute[]
+  entitlement       StoreEntitlement?
+  totemSettings     TotemSettings?
+
+  @@map("stores")
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String         @map("password_hash")
-  name          String
-  role          UserRole       @default(OPERATOR)
-  status        UserStatus     @default(ACTIVE)
-  lastLoginAt   DateTime?      @map("last_login_at")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  refreshTokens RefreshToken[]
+  id           String       @id
+  storeId      String       @map("store_id")
+  store        Store        @relation(fields: [storeId], references: [id])
+  email        String       @unique
+  name         String
+  picture      String?
+  provider     AuthProvider
+  passwordHash String?      @map("password_hash")
+  googleSub    String?      @unique @map("google_sub")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  lastLoginAt  DateTime?    @map("last_login_at")
+  profile      OperatorProfile?
 
   @@map("users")
 }
 
-model RefreshToken {
-  id        String    @id @default(uuid())
-  tokenHash String    @unique @map("token_hash")
-  userId    String    @map("user_id")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime  @map("expires_at")
-  revokedAt DateTime? @map("revoked_at")
-  ip        String?
-  userAgent String?   @map("user_agent")
-  createdAt DateTime  @default(now()) @map("created_at")
+model OperatorProfile {
+  userId      String @id @map("user_id")
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String @map("display_name")
+  role        String @default("Operador")
+  photo       String?
 
-  @@index([userId])
-  @@map("refresh_tokens")
+  @@map("operator_profiles")
 }
 
-// Próximos módulos (catálogo, pedidos, pagamentos, dispositivos de totem, estoque)
+model StoreEntitlement {
+  storeId String     @id @map("store_id")
+  store   Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  plan    PlanId
+  modules ModuleId[]
+
+  @@map("store_entitlements")
+}
+
+model TotemSettings {
+  storeId String    @id @map("store_id")
+  store   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  mode    TotemMode @default(kiosk)
+
+  @@map("totem_settings")
+}
+
+model PartnerSignup {
+  id                String         @id
+  plan              PlanId
+  modules           ModuleId[]
+  documentType      DocumentType   @map("document_type")
+  document          String
+  legalName         String         @map("legal_name")
+  tradeName         String         @map("trade_name")
+  email             String
+  phone             String
+  zipCode           String         @map("zip_code")
+  street            String
+  number            String
+  complement        String         @default("")
+  district          String
+  city              String
+  state             String         @db.Char(2)
+  segment           String         @default("")
+  contactName       String         @map("contact_name")
+  contactRole       String         @default("") @map("contact_role")
+  notes             String         @default("")
+  status            SignupStatus   @default(pending)
+  convertedStoreId  String?        @map("converted_store_id")
+  convertedStore    Store?         @relation(fields: [convertedStoreId], references: [id])
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  @@map("partner_signups")
+}
+
+model Brand {
+  id       String    @id
+  slug     String    @unique
+  name     String
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id             String                 @id
+  storeId        String                 @map("store_id")
+  store          Store                  @relation(fields: [storeId], references: [id])
+  brandId        String?                @map("brand_id")
+  brand          Brand?                 @relation(fields: [brandId], references: [id])
+  name           String
+  status         ProductStatus          @default(active)
+  reference      String?
+  cashPrice      Decimal                @map("cash_price") @db.Decimal(12, 2)
+  sort           Int                    @default(0)
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime?              @updatedAt @map("updated_at")
+  images         ProductImage[]
+  allowedValues  ProductAllowedValue[]
+  stockItems     StockItem[]
+
+  @@map("products")
+}
+
+model ProductImage {
+  id        String  @id
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  sort      Int     @default(0)
+
+  @@map("product_images")
+}
+
+model ProductAttribute {
+  id             String                   @id
+  storeId        String                   @map("store_id")
+  store          Store                    @relation(fields: [storeId], references: [id])
+  name           String
+  useOnTotem     Boolean                  @default(true) @map("use_on_totem")
+  filterOnTotem  Boolean                  @default(false) @map("filter_on_totem")
+  useOnStock     Boolean                  @default(true) @map("use_on_stock")
+  sort           Int                      @default(0)
+  active         Boolean                  @default(true)
+  values         ProductAttributeValue[]
+  stockValues    StockItemAttribute[]
+
+  @@map("product_attributes")
+}
+
+model ProductAttributeValue {
+  id          String                 @id
+  attributeId String                 @map("attribute_id")
+  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String
+  priceDelta  Decimal                @default(0) @map("price_delta") @db.Decimal(12, 2)
+  sort        Int                    @default(0)
+  products    ProductAllowedValue[]
+
+  @@unique([attributeId, value])
+  @@map("product_attribute_values")
+}
+
+model ProductAllowedValue {
+  productId String                @map("product_id")
+  valueId   String                @map("value_id")
+  product   Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  value     ProductAttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([productId, valueId])
+  @@map("product_allowed_values")
+}
+
+model Customer {
+  id          String        @id
+  storeId     String        @map("store_id")
+  store       Store         @relation(fields: [storeId], references: [id])
+  name        String
+  phone       String
+  phoneDigits String        @map("phone_digits")
+  document    String        @default("")
+  email       String        @default("")
+  city        String        @default("")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  workOrders  WorkOrder[]
+  salesOrders SalesOrder[]
+
+  @@unique([storeId, phoneDigits])
+  @@index([storeId, phoneDigits], map: "idx_customers_store_phone")
+  @@map("customers")
+}
+
+model WorkOrder {
+  id                 String           @id
+  storeId            String           @map("store_id")
+  store              Store            @relation(fields: [storeId], references: [id])
+  customerId         String?          @map("customer_id")
+  customer           Customer?        @relation(fields: [customerId], references: [id])
+  customerName       String           @map("customer_name")
+  customerPhone      String           @default("") @map("customer_phone")
+  itemName           String           @map("item_name")
+  itemRef            String           @default("") @map("item_ref")
+  defect             String
+  notes              String           @default("")
+  technician         String           @default("")
+  priority           OsPriority       @default(normal)
+  status             OsStatus         @default(open)
+  labor              Decimal          @default(0) @db.Decimal(12, 2)
+  assetDisposition   AssetDisposition @default(customer) @map("asset_disposition")
+  purchaseCost       Decimal?         @map("purchase_cost") @db.Decimal(12, 2)
+  purchaseAt         DateTime?        @map("purchase_at")
+  purchaseStockId    String?          @map("purchase_stock_id")
+  purchaseStock      StockItem?       @relation("WorkOrderPurchaseStock", fields: [purchaseStockId], references: [id])
+  purchaseFinanceId  String?          @map("purchase_finance_id")
+  purchaseFinance    FinanceEntry?    @relation("WorkOrderPurchaseFinance", fields: [purchaseFinanceId], references: [id])
+  revenueFinanceId   String?          @map("revenue_finance_id")
+  revenueFinance     FinanceEntry?    @relation("WorkOrderRevenueFinance", fields: [revenueFinanceId], references: [id])
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  lines              WorkOrderLine[]
+  generatedStock     StockItem[]      @relation("StockFromWorkOrder")
+
+  @@index([storeId, status], map: "idx_os_store_status")
+  @@map("work_orders")
+}
+
+model StockItem {
+  id                  String               @id
+  storeId             String               @map("store_id")
+  store               Store                @relation(fields: [storeId], references: [id])
+  productId           String?              @map("product_id")
+  product             Product?             @relation(fields: [productId], references: [id])
+  sourceWorkOrderId   String?              @map("source_work_order_id")
+  sourceWorkOrder     WorkOrder?           @relation("StockFromWorkOrder", fields: [sourceWorkOrderId], references: [id])
+  name                String
+  sku                 String               @default("")
+  barcode             String               @default("")
+  imei                String               @default("")
+  qty                 Int                  @default(0)
+  minQty              Int                  @default(0) @map("min_qty")
+  cost                Decimal              @default(0) @db.Decimal(12, 2)
+  price               Decimal              @default(0) @db.Decimal(12, 2)
+  kind                StockKind
+  condition           StockCondition       @default(new)
+  attributes          StockItemAttribute[]
+  orderLines          SalesOrderLine[]
+  workOrderLines      WorkOrderLine[]
+  purchasedByOrders   WorkOrder[]          @relation("WorkOrderPurchaseStock")
+
+  @@index([storeId, name], map: "idx_stock_store_name")
+  @@index([storeId, sku], map: "idx_stock_sku")
+  @@map("stock_items")
+}
+
+model StockItemAttribute {
+  stockId     String           @map("stock_id")
+  attributeId String           @map("attribute_id")
+  value       String
+  stock       StockItem        @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id])
+
+  @@id([stockId, attributeId])
+  @@map("stock_item_attributes")
+}
+
+model PriceTable {
+  id             String          @id
+  storeId        String          @map("store_id")
+  store          Store           @relation(fields: [storeId], references: [id])
+  name           String
+  percent        Decimal         @default(0) @db.Decimal(6, 2)
+  active         Boolean         @default(true)
+  paymentMethods PaymentMethod[]
+  salesOrders    SalesOrder[]
+
+  @@map("price_tables")
+}
+
+model PaymentMethod {
+  id              String       @id
+  storeId         String       @map("store_id")
+  store           Store        @relation(fields: [storeId], references: [id])
+  name            String
+  type            PaymentType
+  priceTableId    String       @map("price_table_id")
+  priceTable      PriceTable   @relation(fields: [priceTableId], references: [id])
+  maxInstallments Int          @map("max_installments")
+  active          Boolean      @default(true)
+  salesOrders     SalesOrder[]
+
+  @@map("payment_methods")
+}
+
+model PosTicket {
+  id             String               @id
+  storeId        String               @map("store_id")
+  store          Store                @relation(fields: [storeId], references: [id])
+  source         TicketSource
+  status         TicketStatus         @default(open)
+  customerName   String               @map("customer_name")
+  customerPhone  String               @map("customer_phone")
+  productName    String               @map("product_name")
+  color          String               @default("")
+  storage        String               @default("")
+  fulfillment    String               @default("")
+  payment        String
+  installment    String?
+  priceLabel     String               @map("price_label")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  closedAt       DateTime?            @map("closed_at")
+  attributes     PosTicketAttribute[]
+  salesOrders    SalesOrder[]
+
+  @@index([storeId, status], map: "idx_tickets_store_status")
+  @@map("pos_tickets")
+}
+
+model PosTicketAttribute {
+  ticketId    String    @map("ticket_id")
+  attributeId String    @map("attribute_id")
+  name        String
+  value       String
+  ticket      PosTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, attributeId])
+  @@map("pos_ticket_attributes")
+}
+
+model SalesOrder {
+  id              String           @id
+  storeId         String           @map("store_id")
+  store           Store            @relation(fields: [storeId], references: [id])
+  ticketId        String?          @map("ticket_id")
+  ticket          PosTicket?       @relation(fields: [ticketId], references: [id])
+  customerId      String?          @map("customer_id")
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  customerName    String           @map("customer_name")
+  customerPhone   String           @default("") @map("customer_phone")
+  productName     String           @map("product_name")
+  amount          Decimal          @db.Decimal(12, 2)
+  discount        Decimal          @default(0) @db.Decimal(12, 2)
+  surcharge       Decimal          @default(0) @db.Decimal(12, 2)
+  status          TicketStatus
+  payment         String
+  paymentMethodId String?          @map("payment_method_id")
+  paymentMethod   PaymentMethod?   @relation(fields: [paymentMethodId], references: [id])
+  priceTableId    String?          @map("price_table_id")
+  priceTable      PriceTable?      @relation(fields: [priceTableId], references: [id])
+  createdAt       DateTime         @default(now()) @map("created_at")
+  lines           SalesOrderLine[]
+
+  @@index([storeId, createdAt(sort: Desc)], map: "idx_orders_store_created")
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id        String     @id
+  orderId   String     @map("order_id")
+  order     SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stockId   String?    @map("stock_id")
+  stock     StockItem? @relation(fields: [stockId], references: [id])
+  name      String
+  qty       Int
+  unitPrice Decimal    @map("unit_price") @db.Decimal(12, 2)
+  imei      String     @default("")
+
+  @@map("sales_order_lines")
+}
+
+model FinanceEntry {
+  id          String         @id
+  storeId     String         @map("store_id")
+  store       Store          @relation(fields: [storeId], references: [id])
+  type        FinanceType
+  label       String
+  amount      Decimal        @db.Decimal(12, 2)
+  source      FinanceSource  @default(manual)
+  refId       String?        @map("ref_id")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  osLines     WorkOrderLine[]
+  osPurchases WorkOrder[]    @relation("WorkOrderPurchaseFinance")
+  osRevenues  WorkOrder[]    @relation("WorkOrderRevenueFinance")
+
+  @@index([storeId, createdAt(sort: Desc)], map: "idx_finance_store_created")
+  @@map("finance_entries")
+}
+
+model WorkOrderLine {
+  id          String        @id
+  workOrderId String        @map("work_order_id")
+  workOrder   WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  stockId     String?       @map("stock_id")
+  stock       StockItem?    @relation(fields: [stockId], references: [id])
+  name        String
+  qty         Int
+  unitCost    Decimal       @map("unit_cost") @db.Decimal(12, 2)
+  unitPrice   Decimal       @map("unit_price") @db.Decimal(12, 2)
+  kind        OsLineKind
+  financeId   String?       @map("finance_id")
+  finance     FinanceEntry? @relation(fields: [financeId], references: [id])
+
+  @@map("work_order_lines")
+}

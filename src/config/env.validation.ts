@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import {
   IsBooleanString,
+  IsEmail,
   IsEnum,
   IsNumberString,
   IsOptional,
@@ -20,7 +21,7 @@ class EnvironmentVariables {
   NODE_ENV: NodeEnv = NodeEnv.development;
 
   @IsNumberString()
-  PORT = '3000';
+  PORT = '8080';
 
   @IsString()
   API_PREFIX = 'api/v1';
@@ -30,21 +31,23 @@ class EnvironmentVariables {
 
   @IsString()
   @MinLength(16)
-  JWT_ACCESS_SECRET!: string;
-
-  @IsString()
-  JWT_ACCESS_EXPIRES_IN = '15m';
-
-  @IsString()
-  @MinLength(16)
-  JWT_REFRESH_SECRET!: string;
-
-  @IsString()
-  JWT_REFRESH_EXPIRES_IN = '7d';
+  JWT_SECRET!: string;
 
   @IsOptional()
-  @IsBooleanString()
-  ENABLE_PUBLIC_REGISTER?: string;
+  @IsString()
+  JWT_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsEmail()
+  AUTH_DEV_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  AUTH_DEV_PASSWORD?: string;
+
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_ID?: string;
 
   @IsOptional()
   @IsNumberString()
@@ -60,7 +63,15 @@ class EnvironmentVariables {
 }
 
 export function validateEnv(config: Record<string, unknown>) {
-  const validated = plainToInstance(EnvironmentVariables, config, {
+  const withAlias = {
+    ...config,
+    JWT_SECRET:
+      config.JWT_SECRET ??
+      config.JWT_ACCESS_SECRET ??
+      'marthi-dev-secret-change-me',
+  };
+
+  const validated = plainToInstance(EnvironmentVariables, withAlias, {
     enableImplicitConversion: false,
   });
 

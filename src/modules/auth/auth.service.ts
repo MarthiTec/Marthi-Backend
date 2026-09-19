@@ -1,164 +1,116 @@
 import {
-  ForbiddenException,
   Injectable,
+  NotImplementedException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User, UserRole, UserStatus } from '@prisma/client';
-import { Request } from 'express';
-import { PrismaService } from '../../prisma/prisma.service';
+import { User } from '@prisma/client';
+import { OAuth2Client } from 'google-auth-library';
+import { comparePassword } from '../../common/utils/crypto';
+import { DEMO_STORE_ID } from '../../common/utils/ids';
 import { UsersService } from '../users/users.service';
-import {
-  comparePassword,
-  hashToken,
-  parseDurationToMs,
-} from '../../common/utils/crypto';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { JwtPayload } from './types/jwt-payload.type';
+import { AuthSession, AuthUser, JwtPayload } from './types/auth.types';
+import { toAuthUser } from '../users/types/public-user.type';
 
 @Injectable()
 export class AuthService {
+  private googleClient: OAuth2Client | null = null;
+
   constructor(
     private readonly usersService: UsersService,
-    private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-  ) {}
-
-  async register(dto: RegisterDto, request: Request) {
-    const userCount = await this.usersService.count();
-    const publicRegisterEnabled =
-      this.config.get('ENABLE_PUBLIC_REGISTER', 'true') === 'true';
-
-    if (userCount > 0 && !publicRegisterEnabled) {
-      throw new ForbiddenException('Cadastro público está desabilitado');
+  ) {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    if (clientId) {
+      this.googleClient = new OAuth2Client(clientId);
     }
-
-    const user = await this.usersService.create({
-      ...dto,
-      role: userCount === 0 ? UserRole.SUPER_ADMIN : UserRole.OPERATOR,
-    });
-
-    return this.issueSession(user, request);
   }
 
-  async login(dto: LoginDto, request: Request) {
+  providers() {
+    const googleClientId = this.config.get<string>('GOOGLE_CLIENT_ID') ?? null;
+
+    return {
+      google: Boolean(googleClientId),
+      password: true,
+      googleClientId,
+    };
+  }
+
+  async login(dto: LoginDto): Promise<AuthSession> {
     const user = await this.usersService.findByEmail(dto.email);
 
-    if (!user || !(await comparePassword(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    if (user.status !== UserStatus.ACTIVE) {
-      throw new ForbiddenException('Usuário inativo ou bloqueado');
+    if (
+      !user?.passwordHash ||
+      !(await comparePassword(dto.password, user.passwordHash))
+    ) {
+      throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
 
     await this.usersService.touchLastLogin(user.id);
-    return this.issueSession(user, request);
+    return this.issueSession(user);
   }
 
-  async refresh(refreshToken: string, request: Request) {
-    const payload = await this.verifyRefreshToken(refreshToken);
-    const tokenHash = hashToken(refreshToken);
-
-    const stored = await this.prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
-    });
-
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token inválido');
+  async loginWithGoogle(idToken: string): Promise<AuthSession> {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    if (!this.googleClient || !clientId) {
+      throw new NotImplementedException(
+        'Login com Google não está configurado.',
+      );
     }
 
-    if (
-      stored.userId !== payload.sub ||
-      stored.user.status !== UserStatus.ACTIVE
-    ) {
-      throw new UnauthorizedException('Refresh token inválido');
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+
+    if (!payload?.sub || !payload.email) {
+      throw new UnauthorizedException('Token Google inválido.');
     }
 
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date() },
-    });
+    let user = await this.usersService.findByGoogleSub(payload.sub);
+    if (!user) {
+      user = await this.usersService.findByEmail(payload.email);
+    }
 
-    return this.issueSession(stored.user, request);
+    if (!user) {
+      user = await this.usersService.createGoogleUser({
+        id: `google:${payload.sub}`,
+        storeId: DEMO_STORE_ID,
+        email: payload.email,
+        name: payload.name ?? payload.email,
+        picture: payload.picture ?? null,
+        googleSub: payload.sub,
+      });
+    }
+
+    await this.usersService.touchLastLogin(user.id);
+    return this.issueSession(user);
   }
 
-  async logout(refreshToken: string) {
-    const tokenHash = hashToken(refreshToken);
-
-    await this.prisma.refreshToken.updateMany({
-      where: { tokenHash, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-
-    return { revoked: true };
+  async me(userId: string): Promise<{ user: AuthUser }> {
+    const user = await this.usersService.findByIdOrThrow(userId);
+    return { user: toAuthUser(user) };
   }
 
-  async me(userId: string) {
-    const user = await this.usersService.findActiveByIdOrThrow(userId);
-    return this.usersService.toPublic(user);
-  }
-
-  private async issueSession(user: User, request: Request) {
-    const tokens = await this.createTokens(user);
-    await this.persistRefreshToken(user.id, tokens.refreshToken, request);
-
-    return {
-      user: this.usersService.toPublic(user),
-      tokens,
-    };
-  }
-
-  private async createTokens(user: User) {
+  private async issueSession(user: User): Promise<AuthSession> {
+    const authUser = toAuthUser(user);
     const payload: JwtPayload = {
       sub: user.id,
-      email: user.email,
-      role: user.role,
+      email: authUser.email,
+      name: authUser.name,
+      picture: authUser.picture,
+      provider: authUser.provider,
     };
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwt.signAsync(payload, {
-        secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
-        expiresIn: this.config.get('JWT_ACCESS_EXPIRES_IN', '15m'),
-      }),
-      this.jwt.signAsync(payload, {
-        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
-        expiresIn: this.config.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-      }),
-    ]);
-
-    return { accessToken, refreshToken };
-  }
-
-  private async persistRefreshToken(
-    userId: string,
-    refreshToken: string,
-    request: Request,
-  ) {
-    const expiresIn = this.config.get('JWT_REFRESH_EXPIRES_IN', '7d');
-
-    await this.prisma.refreshToken.create({
-      data: {
-        userId,
-        tokenHash: hashToken(refreshToken),
-        expiresAt: new Date(Date.now() + parseDurationToMs(expiresIn)),
-        ip: request.ip,
-        userAgent: request.headers['user-agent'],
-      },
+    const token = await this.jwt.signAsync(payload, {
+      secret: this.config.getOrThrow('JWT_SECRET'),
+      expiresIn: this.config.get('JWT_EXPIRES_IN', '7d'),
     });
-  }
 
-  private async verifyRefreshToken(refreshToken: string): Promise<JwtPayload> {
-    try {
-      return await this.jwt.verifyAsync<JwtPayload>(refreshToken, {
-        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
-      });
-    } catch {
-      throw new UnauthorizedException('Refresh token inválido');
-    }
+    return { token, user: authUser };
   }
 }

@@ -1,12 +1,12 @@
-import { UserRole, UserStatus } from '@prisma/client';
+import { User } from '@prisma/client';
+import { AuthUser } from '../../auth/types/auth.types';
 
-export type PublicUser = {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  status: UserStatus;
-  lastLoginAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
+export function toAuthUser(user: User): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    picture: user.picture,
+    provider: user.provider,
+  };
+}
