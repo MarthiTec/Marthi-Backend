@@ -19,4 +19,16 @@ export class ProductsController {
   images(@Param('id') id: string) {
     return this.productsService.images(id);
   }
+
+  @Get(':id/variants')
+  @ApiOperation({ summary: 'Variantes do produto (estoque ou attrs)' })
+  variants(@Param('id') id: string) {
+    return this.productsService.variants(id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Detalhe do produto' })
+  findById(@Param('id') id: string) {
+    return this.productsService.findById(id);
+  }
 }
