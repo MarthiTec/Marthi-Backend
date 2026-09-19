@@ -23,14 +23,15 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {
-    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID')?.trim();
     if (clientId) {
       this.googleClient = new OAuth2Client(clientId);
     }
   }
 
   providers() {
-    const googleClientId = this.config.get<string>('GOOGLE_CLIENT_ID') ?? null;
+    const googleClientId =
+      this.config.get<string>('GOOGLE_CLIENT_ID')?.trim() || null;
 
     return {
       google: Boolean(googleClientId),
@@ -54,7 +55,7 @@ export class AuthService {
   }
 
   async loginWithGoogle(idToken: string): Promise<AuthSession> {
-    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID')?.trim();
     if (!this.googleClient || !clientId) {
       throw new NotImplementedException(
         'Login com Google não está configurado.',

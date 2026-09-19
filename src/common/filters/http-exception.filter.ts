@@ -55,8 +55,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error: {
         code: statusToErrorCode(status) ?? ErrorCode.INTERNAL_ERROR,
         message,
-        details,
-        path: request.url,
+        details: {
+          ...details,
+          path: request.url,
+        },
       },
     });
   }
