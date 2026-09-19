@@ -24,6 +24,31 @@ Na raiz ficam só os arquivos que as ferramentas exigem (`package.json`, `tsconf
 
 Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google, cadastro de parceiro e health.
 
+## Deploy Discloud (Site público)
+
+App alvo: Site `ID=marthi-api` → `https://marthi-api.discloud.app`
+
+1. `npm run build` (gera `dist/main.js`)
+2. ZIP com `discloud.config`, `package.json`, `prisma/`, `dist/` (não ignore `dist/` no ZIP de upload se a Discloud não rebuildar)
+3. Dashboard → **+ Upload** como **Site** (não reusar o Bot numérico só com Commit)
+4. Domínios: `marthi-api` → **Em uso**
+5. Variáveis (mínimo):
+
+```text
+DATABASE_URL=postgresql://...@...:5432/MarthiDB?schema=public
+JWT_SECRET=...
+CORS_ORIGINS=https://marthi-totem.discloud.app,http://localhost:5173
+PORT=8080
+API_PREFIX=api/v1
+GOOGLE_CLIENT_ID=...
+AUTH_DEV_EMAIL=teste@marthi.com.br
+AUTH_DEV_PASSWORD=123
+```
+
+6. Aceite: `GET https://marthi-api.discloud.app/health` → `database.connected: true`
+
+O front (`Marthi-Tec`) deve buildar com `VITE_API_URL=https://marthi-api.discloud.app`. Ver `docs/specs/backend-nest-wiring.md` no monorepo da plataforma.
+
 ## Pré-requisitos
 
 - Node.js >= 20
