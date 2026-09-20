@@ -140,13 +140,25 @@ async function main() {
   await prisma.storeEntitlement.upsert({
     where: { storeId: STORE_ID },
     update: {
-      plan: PlanId.scale,
-      modules: [ModuleId.totem, ModuleId.presales, ModuleId.os, ModuleId.erp],
+      plan: PlanId.golden,
+      modules: [
+        ModuleId.totem,
+        ModuleId.os,
+        ModuleId.erp,
+        ModuleId.fiscal,
+        ModuleId.ecommerce,
+      ],
     },
     create: {
       storeId: STORE_ID,
-      plan: PlanId.scale,
-      modules: [ModuleId.totem, ModuleId.presales, ModuleId.os, ModuleId.erp],
+      plan: PlanId.golden,
+      modules: [
+        ModuleId.totem,
+        ModuleId.os,
+        ModuleId.erp,
+        ModuleId.fiscal,
+        ModuleId.ecommerce,
+      ],
     },
   });
 

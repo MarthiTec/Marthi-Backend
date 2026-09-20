@@ -8,18 +8,19 @@ datasource db {
 }
 
 enum PlanId {
-  start
-  growth
-  scale
+  bronze
+  silver
+  golden
 
   @@map("plan_id")
 }
 
 enum ModuleId {
   totem
-  presales
   os
   erp
+  fiscal
+  ecommerce
 
   @@map("module_id")
 }
