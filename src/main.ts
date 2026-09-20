@@ -2,10 +2,25 @@ import { NestFactory } from '@nestjs/core';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+console.error('[marthi] node starting', process.version);
+
+function applyMigrations() {
+  const prismaCli = join(process.cwd(), 'node_modules', 'prisma', 'build', 'index.js');
+  console.error('[marthi] prisma migrate deploy');
+  execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
+    stdio: 'inherit',
+    env: process.env,
+  });
+}
+
 async function bootstrap() {
+  applyMigrations();
+
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
 
@@ -39,7 +54,7 @@ async function bootstrap() {
     }),
   );
 
-  if (config.get('SWAGGER_ENABLED') !== 'false') {
+  if (config.get('SWAGGER_ENABLED') === 'true') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Marthi Totem API')
       .setDescription('Backend da aplicação de totem para venda de produtos')
