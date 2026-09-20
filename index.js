@@ -1,8 +1,8 @@
 'use strict';
 
 try {
-  require('./dist/main.js');
+  require('./build/main.js');
 } catch (error) {
-  console.error('[marthi] failed to load dist/main.js', error);
+  console.error('[marthi] failed to load build/main.js', error);
   process.exit(1);
 }

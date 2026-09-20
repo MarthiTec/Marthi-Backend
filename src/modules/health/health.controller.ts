@@ -10,7 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 @ApiTags('health')
 @SkipThrottle()
 @SkipResponseWrap()
-@Controller('health')
+@Controller()
 export class HealthController {
   constructor(
     private readonly prisma: PrismaService,
@@ -18,7 +18,7 @@ export class HealthController {
   ) {}
 
   @Public()
-  @Get()
+  @Get(['health', '/'])
   async check(@Res({ passthrough: true }) response: Response) {
     const configured = Boolean(this.config.get('DATABASE_URL'));
     let connected = false;
