@@ -7,11 +7,17 @@ import { join } from 'node:path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
-console.error('[marthi] node starting', process.version);
+process.stderr.write(`[marthi] node starting ${process.version}\n`);
 
 function applyMigrations() {
-  const prismaCli = join(process.cwd(), 'node_modules', 'prisma', 'build', 'index.js');
-  console.error('[marthi] prisma migrate deploy');
+  const prismaCli = join(
+    process.cwd(),
+    'node_modules',
+    'prisma',
+    'build',
+    'index.js',
+  );
+  process.stderr.write('[marthi] prisma migrate deploy\n');
   execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
     stdio: 'inherit',
     env: process.env,
@@ -19,8 +25,6 @@ function applyMigrations() {
 }
 
 async function bootstrap() {
-  applyMigrations();
-
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
 
@@ -68,7 +72,13 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT || config.get('PORT') || 8080);
   await app.listen(port, '0.0.0.0');
-  console.log(`[marthi] listening on 0.0.0.0:${port}`);
+  process.stderr.write(`[marthi] listening on 0.0.0.0:${port}\n`);
+
+  try {
+    applyMigrations();
+  } catch (error) {
+    console.error('[marthi] migrate failed', error);
+  }
 }
 
 void bootstrap().catch((error: unknown) => {
