@@ -50,6 +50,10 @@ async function bootstrap() {
 
   const port = Number(config.get('PORT', 8080));
   await app.listen(port, '0.0.0.0');
+  console.log(`[marthi] listening on 0.0.0.0:${port}`);
 }
 
-void bootstrap();
+void bootstrap().catch((error: unknown) => {
+  console.error('[marthi] bootstrap failed', error);
+  process.exit(1);
+});

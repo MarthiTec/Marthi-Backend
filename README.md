@@ -28,8 +28,8 @@ Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google
 
 App alvo: Site `ID=marthi-backend` → `https://marthi-backend.discloud.app`
 
-1. ZIP da raiz do repo (`discloud.config`, `package.json`, `src/`, `prisma/`). Não inclua `dist/` nem `node_modules/`.
-2. O `MAIN` é `src/main.ts` (arquivo que existe no ZIP). A Discloud gera `dist/main.js` no `BUILD`.
+1. ZIP da raiz do repo (`discloud.config`, `package.json`, `index.js`, `src/`, `prisma/`). Não inclua `dist/` nem `node_modules/`.
+2. O `MAIN` é `index.js` (existe no ZIP). A Discloud gera `dist/main.js` no `BUILD`.
 3. Dashboard → **+ Upload** como **Site** (não reusar o Bot numérico só com Commit)
 4. Domínios: `marthi-backend` → **Em uso**
 5. Variáveis (mínimo):

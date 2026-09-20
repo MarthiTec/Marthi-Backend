@@ -62,12 +62,38 @@ class EnvironmentVariables {
   SWAGGER_ENABLED?: string;
 }
 
+function omitBlank(config: Record<string, unknown>) {
+  const next: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(config)) {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length === 0) {
+        continue;
+      }
+      next[key] = trimmed;
+      continue;
+    }
+
+    next[key] = value;
+  }
+
+  return next;
+}
+
+function formatEnvErrors(errors: ReturnType<typeof validateSync>) {
+  return errors
+    .flatMap((error) => Object.values(error.constraints ?? {}))
+    .join('; ');
+}
+
 export function validateEnv(config: Record<string, unknown>) {
+  const sanitized = omitBlank(config);
   const withAlias = {
-    ...config,
+    ...sanitized,
     JWT_SECRET:
-      config.JWT_SECRET ??
-      config.JWT_ACCESS_SECRET ??
+      sanitized.JWT_SECRET ??
+      sanitized.JWT_ACCESS_SECRET ??
       'marthi-dev-secret-change-me',
   };
 
@@ -80,7 +106,7 @@ export function validateEnv(config: Record<string, unknown>) {
   });
 
   if (errors.length > 0) {
-    throw new Error(errors.toString());
+    throw new Error(`Invalid environment: ${formatEnvErrors(errors)}`);
   }
 
   return validated;
