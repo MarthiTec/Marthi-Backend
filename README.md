@@ -26,12 +26,12 @@ Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google
 
 ## Deploy Discloud (Site público)
 
-App alvo: Site `ID=marthi-api` → `https://marthi-api.discloud.app`
+App alvo: Site `ID=marthi-backend` → `https://marthi-backend.discloud.app`
 
 1. `npm run build` (gera `dist/main.js`)
 2. ZIP com `discloud.config`, `package.json`, `prisma/`, `dist/` (não ignore `dist/` no ZIP de upload se a Discloud não rebuildar)
 3. Dashboard → **+ Upload** como **Site** (não reusar o Bot numérico só com Commit)
-4. Domínios: `marthi-api` → **Em uso**
+4. Domínios: `marthi-backend` → **Em uso**
 5. Variáveis (mínimo):
 
 ```text
@@ -45,9 +45,9 @@ AUTH_DEV_EMAIL=teste@marthi.com.br
 AUTH_DEV_PASSWORD=123
 ```
 
-6. Aceite: `GET https://marthi-api.discloud.app/health` → `database.connected: true`
+6. Aceite: `GET https://marthi-backend.discloud.app/health` → `database.connected: true`
 
-O front (`Marthi-Tec`) deve buildar com `VITE_API_URL=https://marthi-api.discloud.app`. Ver `docs/specs/backend-nest-wiring.md` no monorepo da plataforma.
+O front (`Marthi-Tec`) deve buildar com `VITE_API_URL=https://marthi-backend.discloud.app`. Ver `docs/specs/backend-nest-wiring.md` no monorepo da plataforma.
 
 ## Pré-requisitos
 
