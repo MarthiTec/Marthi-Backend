@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
 
   const apiPrefix = config.getOrThrow<string>('API_PREFIX');
@@ -51,7 +51,7 @@ async function bootstrap() {
     SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
   }
 
-  const port = Number(config.get('PORT', 8080));
+  const port = Number(process.env.PORT || config.get('PORT') || 8080);
   await app.listen(port, '0.0.0.0');
   console.log(`[marthi] listening on 0.0.0.0:${port}`);
 }

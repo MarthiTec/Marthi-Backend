@@ -11,7 +11,6 @@ export class PrismaService
       await this.$connect();
     } catch (error) {
       console.error('[marthi] database connection failed', error);
-      throw error;
     }
   }
 

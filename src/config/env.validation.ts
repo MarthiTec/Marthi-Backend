@@ -89,6 +89,15 @@ function formatEnvErrors(errors: ReturnType<typeof validateSync>) {
 
 export function validateEnv(config: Record<string, unknown>) {
   const sanitized = omitBlank(config);
+
+  if (typeof sanitized.NODE_ENV === 'string') {
+    sanitized.NODE_ENV = sanitized.NODE_ENV.toLowerCase();
+  }
+
+  if (typeof sanitized.PORT === 'number') {
+    sanitized.PORT = String(sanitized.PORT);
+  }
+
   const withAlias = {
     ...sanitized,
     JWT_SECRET:

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Backend da plataforma de totem / PDV Marthi",
   "private": true,
-  "main": "build/main.js",
+  "main": "dist/main.js",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20"
@@ -11,11 +11,11 @@
   "scripts": {
     "prebuild": "prisma generate",
     "build": "nest build",
-    "start": "node build/main.js",
+    "start": "prisma migrate deploy && node dist/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node index.js",
-    "start:discloud": "node index.js",
+    "start:prod": "prisma migrate deploy && node dist/main.js",
+    "start:discloud": "prisma migrate deploy && node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test,prisma}/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\" \"prisma/**/*.ts\" \"config/**/*.{mjs,json}\"",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
