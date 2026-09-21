@@ -1,5 +1,6 @@
 export type AuthUser = {
   id: string;
+  storeId: string;
   email: string;
   name: string;
   picture: string | null;

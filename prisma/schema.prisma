@@ -155,6 +155,33 @@ enum SignupStatus {
   @@map("signup_status")
 }
 
+enum QuoteStatus {
+  none
+  draft
+  sent
+  approved
+  rejected
+
+  @@map("quote_status")
+}
+
+enum WorkOrderPhotoKind {
+  entry
+  exit
+  other
+
+  @@map("work_order_photo_kind")
+}
+
+enum ChecklistMark {
+  unchecked
+  ok
+  fail
+  na
+
+  @@map("checklist_mark")
+}
+
 model Store {
   id           String       @id
   tradeName    String       @map("trade_name")
@@ -229,9 +256,11 @@ model StoreEntitlement {
 }
 
 model TotemSettings {
-  storeId String    @id @map("store_id")
-  store   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  mode    TotemMode @default(kiosk)
+  storeId            String    @id @map("store_id")
+  store              Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  mode               TotemMode @default(kiosk)
+  exitPassword       String    @default("cellponto") @map("exit_password")
+  shareStockWithErp  Boolean   @default(false) @map("share_stock_with_erp")
 
   @@map("totem_settings")
 }
@@ -317,6 +346,7 @@ model ProductAttribute {
   values         ProductAttributeValue[]
   stockValues    StockItemAttribute[]
 
+  @@index([storeId], map: "idx_attributes_store")
   @@map("product_attributes")
 }
 
@@ -344,84 +374,164 @@ model ProductAllowedValue {
 }
 
 model Customer {
-  id          String        @id
-  storeId     String        @map("store_id")
-  store       Store         @relation(fields: [storeId], references: [id])
-  name        String
-  phone       String
-  phoneDigits String        @map("phone_digits")
-  document    String        @default("")
-  email       String        @default("")
-  city        String        @default("")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  workOrders  WorkOrder[]
-  salesOrders SalesOrder[]
+  id           String        @id
+  storeId      String        @map("store_id")
+  store        Store         @relation(fields: [storeId], references: [id])
+  name         String
+  phone        String
+  phoneDigits  String        @map("phone_digits")
+  document     String        @default("")
+  email        String        @default("")
+  city         String        @default("")
+  zipCode      String        @default("") @map("zip_code")
+  street       String        @default("")
+  number       String        @default("")
+  complement   String        @default("")
+  neighborhood String        @default("")
+  state        String        @default("") @db.VarChar(2)
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  workOrders   WorkOrder[]
+  salesOrders  SalesOrder[]
 
   @@unique([storeId, phoneDigits])
   @@index([storeId, phoneDigits], map: "idx_customers_store_phone")
+  @@index([storeId, name], map: "idx_customers_store_name")
   @@map("customers")
 }
 
 model WorkOrder {
-  id                 String           @id
-  storeId            String           @map("store_id")
-  store              Store            @relation(fields: [storeId], references: [id])
-  customerId         String?          @map("customer_id")
-  customer           Customer?        @relation(fields: [customerId], references: [id])
-  customerName       String           @map("customer_name")
-  customerPhone      String           @default("") @map("customer_phone")
-  itemName           String           @map("item_name")
-  itemRef            String           @default("") @map("item_ref")
-  defect             String
-  notes              String           @default("")
-  technician         String           @default("")
-  priority           OsPriority       @default(normal)
-  status             OsStatus         @default(open)
-  labor              Decimal          @default(0) @db.Decimal(12, 2)
-  assetDisposition   AssetDisposition @default(customer) @map("asset_disposition")
-  purchaseCost       Decimal?         @map("purchase_cost") @db.Decimal(12, 2)
-  purchaseAt         DateTime?        @map("purchase_at")
-  purchaseStockId    String?          @map("purchase_stock_id")
-  purchaseStock      StockItem?       @relation("WorkOrderPurchaseStock", fields: [purchaseStockId], references: [id])
-  purchaseFinanceId  String?          @map("purchase_finance_id")
-  purchaseFinance    FinanceEntry?    @relation("WorkOrderPurchaseFinance", fields: [purchaseFinanceId], references: [id])
-  revenueFinanceId   String?          @map("revenue_finance_id")
-  revenueFinance     FinanceEntry?    @relation("WorkOrderRevenueFinance", fields: [revenueFinanceId], references: [id])
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
-  lines              WorkOrderLine[]
-  generatedStock     StockItem[]      @relation("StockFromWorkOrder")
+  id                   String           @id
+  storeId              String           @map("store_id")
+  store                Store            @relation(fields: [storeId], references: [id])
+  customerId           String?          @map("customer_id")
+  customer             Customer?        @relation(fields: [customerId], references: [id])
+  customerName         String           @map("customer_name")
+  customerPhone        String           @default("") @map("customer_phone")
+  customerDocument     String           @default("") @map("customer_document")
+  customerEmail        String           @default("") @map("customer_email")
+  itemName             String           @map("item_name")
+  itemBrand            String           @default("") @map("item_brand")
+  itemModel            String           @default("") @map("item_model")
+  itemColor            String           @default("") @map("item_color")
+  itemRef              String           @default("") @map("item_ref")
+  devicePassword       String           @default("") @map("device_password")
+  accessories          String           @default("")
+  conditionOnEntry     String           @default("") @map("condition_on_entry")
+  defect               String
+  diagnosis            String           @default("")
+  notes                String           @default("")
+  estimatedReadyAt     String           @default("") @map("estimated_ready_at")
+  technician           String           @default("")
+  sellerId             String           @default("") @map("seller_id")
+  priority             OsPriority       @default(normal)
+  status               OsStatus         @default(open)
+  labor                Decimal          @default(0) @db.Decimal(12, 2)
+  parts                Decimal          @default(0) @db.Decimal(12, 2)
+  assetDisposition     AssetDisposition @default(customer) @map("asset_disposition")
+  quoteStatus          QuoteStatus      @default(none) @map("quote_status")
+  quoteNotes           String           @default("") @map("quote_notes")
+  quoteValidUntil      String           @default("") @map("quote_valid_until")
+  quoteSentAt          DateTime?        @map("quote_sent_at")
+  quoteDecidedAt       DateTime?        @map("quote_decided_at")
+  customerSignature    String           @default("") @map("customer_signature")
+  customerSignedAt     DateTime?        @map("customer_signed_at")
+  customerSignedName   String           @default("") @map("customer_signed_name")
+  purchaseCost         Decimal?         @map("purchase_cost") @db.Decimal(12, 2)
+  purchaseAt           DateTime?        @map("purchase_at")
+  purchaseStockId      String?          @map("purchase_stock_id")
+  purchaseStock        StockItem?       @relation("WorkOrderPurchaseStock", fields: [purchaseStockId], references: [id])
+  purchaseFinanceId    String?          @map("purchase_finance_id")
+  purchaseFinance      FinanceEntry?    @relation("WorkOrderPurchaseFinance", fields: [purchaseFinanceId], references: [id])
+  revenueFinanceId     String?          @map("revenue_finance_id")
+  revenueFinance       FinanceEntry?    @relation("WorkOrderRevenueFinance", fields: [revenueFinanceId], references: [id])
+  progressStartedAt    DateTime?        @map("progress_started_at")
+  deliveredAt          DateTime?        @map("delivered_at")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  lines                WorkOrderLine[]
+  photos               WorkOrderPhoto[]
+  checklistItems       WorkOrderChecklistItem[]
+  generatedStock       StockItem[]      @relation("StockFromWorkOrder")
 
   @@index([storeId, status], map: "idx_os_store_status")
+  @@index([storeId, technician], map: "idx_os_store_technician")
   @@map("work_orders")
 }
 
+model WorkOrderPhoto {
+  id          String             @id
+  workOrderId String             @map("work_order_id")
+  workOrder   WorkOrder          @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  kind        WorkOrderPhotoKind
+  dataUrl     String             @map("data_url")
+  caption     String             @default("")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  @@index([workOrderId], map: "idx_os_photos_order")
+  @@map("work_order_photos")
+}
+
+model WorkOrderChecklistItem {
+  id          String        @id
+  workOrderId String        @map("work_order_id")
+  workOrder   WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  label       String
+  mark        ChecklistMark @default(unchecked)
+  note        String        @default("")
+  sort        Int           @default(0)
+
+  @@index([workOrderId], map: "idx_os_checklist_order")
+  @@map("work_order_checklist_items")
+}
+
 model StockItem {
-  id                  String               @id
-  storeId             String               @map("store_id")
-  store               Store                @relation(fields: [storeId], references: [id])
-  productId           String?              @map("product_id")
-  product             Product?             @relation(fields: [productId], references: [id])
-  sourceWorkOrderId   String?              @map("source_work_order_id")
-  sourceWorkOrder     WorkOrder?           @relation("StockFromWorkOrder", fields: [sourceWorkOrderId], references: [id])
-  name                String
-  sku                 String               @default("")
-  barcode             String               @default("")
-  imei                String               @default("")
-  qty                 Int                  @default(0)
-  minQty              Int                  @default(0) @map("min_qty")
-  cost                Decimal              @default(0) @db.Decimal(12, 2)
-  price               Decimal              @default(0) @db.Decimal(12, 2)
-  kind                StockKind
-  condition           StockCondition       @default(new)
-  attributes          StockItemAttribute[]
-  orderLines          SalesOrderLine[]
-  workOrderLines      WorkOrderLine[]
-  purchasedByOrders   WorkOrder[]          @relation("WorkOrderPurchaseStock")
+  id                      String               @id
+  storeId                 String               @map("store_id")
+  store                   Store                @relation(fields: [storeId], references: [id])
+  productId               String?              @map("product_id")
+  product                 Product?             @relation(fields: [productId], references: [id])
+  sourceWorkOrderId       String?              @map("source_work_order_id")
+  sourceWorkOrder         WorkOrder?           @relation("StockFromWorkOrder", fields: [sourceWorkOrderId], references: [id])
+  name                    String
+  sku                     String               @default("")
+  barcode                 String               @default("")
+  imei                    String               @default("")
+  color                   String               @default("")
+  capacity                String               @default("")
+  qty                     Int                  @default(0)
+  minQty                  Int                  @default(0) @map("min_qty")
+  cost                    Decimal              @default(0) @db.Decimal(12, 2)
+  price                   Decimal              @default(0) @db.Decimal(12, 2)
+  kind                    StockKind
+  condition               StockCondition       @default(new)
+  showOnTotem             Boolean              @default(false) @map("show_on_totem")
+  supplierId              String?              @map("supplier_id")
+  fiscalClassificationId  String?              @map("fiscal_classification_id")
+  warehouseId             String?              @map("warehouse_id")
+  trackLot                Boolean              @default(false) @map("track_lot")
+  isKit                   Boolean              @default(false) @map("is_kit")
+  attributes              StockItemAttribute[]
+  images                  StockItemImage[]
+  orderLines              SalesOrderLine[]
+  workOrderLines          WorkOrderLine[]
+  purchasedByOrders       WorkOrder[]          @relation("WorkOrderPurchaseStock")
 
   @@index([storeId, name], map: "idx_stock_store_name")
   @@index([storeId, sku], map: "idx_stock_sku")
+  @@index([storeId, barcode], map: "idx_stock_barcode")
   @@map("stock_items")
+}
+
+model StockItemImage {
+  id      String    @id
+  stockId String    @map("stock_id")
+  stock   StockItem @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  url     String
+  sort    Int       @default(0)
+
+  @@index([stockId], map: "idx_stock_images_stock")
+  @@map("stock_item_images")
 }
 
 model StockItemAttribute {
@@ -499,27 +609,30 @@ model PosTicketAttribute {
 }
 
 model SalesOrder {
-  id              String           @id
-  storeId         String           @map("store_id")
-  store           Store            @relation(fields: [storeId], references: [id])
-  ticketId        String?          @map("ticket_id")
-  ticket          PosTicket?       @relation(fields: [ticketId], references: [id])
-  customerId      String?          @map("customer_id")
-  customer        Customer?        @relation(fields: [customerId], references: [id])
-  customerName    String           @map("customer_name")
-  customerPhone   String           @default("") @map("customer_phone")
-  productName     String           @map("product_name")
-  amount          Decimal          @db.Decimal(12, 2)
-  discount        Decimal          @default(0) @db.Decimal(12, 2)
-  surcharge       Decimal          @default(0) @db.Decimal(12, 2)
-  status          TicketStatus
-  payment         String
-  paymentMethodId String?          @map("payment_method_id")
-  paymentMethod   PaymentMethod?   @relation(fields: [paymentMethodId], references: [id])
-  priceTableId    String?          @map("price_table_id")
-  priceTable      PriceTable?      @relation(fields: [priceTableId], references: [id])
-  createdAt       DateTime         @default(now()) @map("created_at")
-  lines           SalesOrderLine[]
+  id                String           @id
+  storeId           String           @map("store_id")
+  store             Store            @relation(fields: [storeId], references: [id])
+  ticketId          String?          @map("ticket_id")
+  ticket            PosTicket?       @relation(fields: [ticketId], references: [id])
+  customerId        String?          @map("customer_id")
+  customer          Customer?        @relation(fields: [customerId], references: [id])
+  customerName      String           @map("customer_name")
+  customerPhone     String           @default("") @map("customer_phone")
+  customerDocument  String           @default("") @map("customer_document")
+  productName       String           @map("product_name")
+  amount            Decimal          @db.Decimal(12, 2)
+  discount          Decimal          @default(0) @db.Decimal(12, 2)
+  surcharge         Decimal          @default(0) @db.Decimal(12, 2)
+  status            TicketStatus
+  payment           String
+  paymentMethodId   String?          @map("payment_method_id")
+  paymentMethod     PaymentMethod?   @relation(fields: [paymentMethodId], references: [id])
+  priceTableId      String?          @map("price_table_id")
+  priceTable        PriceTable?      @relation(fields: [priceTableId], references: [id])
+  sellerId          String           @default("") @map("seller_id")
+  sellerName        String           @default("") @map("seller_name")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  lines             SalesOrderLine[]
 
   @@index([storeId, createdAt(sort: Desc)], map: "idx_orders_store_created")
   @@map("sales_orders")

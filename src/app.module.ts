@@ -12,6 +12,15 @@ import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
 import { PartnersModule } from './modules/partners/partners.module';
 import { ProductsModule } from './modules/products/products.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { AttributesModule } from './modules/attributes/attributes.module';
+import { StockModule } from './modules/stock/stock.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { SalesModule } from './modules/sales/sales.module';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
+import { StoreModule } from './modules/store/store.module';
+import { MeModule } from './modules/me/me.module';
 
 @Module({
   imports: [
@@ -28,6 +37,15 @@ import { ProductsModule } from './modules/products/products.module';
     HealthModule,
     PartnersModule,
     ProductsModule,
+    CustomersModule,
+    AttributesModule,
+    StockModule,
+    PricingModule,
+    FinanceModule,
+    SalesModule,
+    WorkOrdersModule,
+    StoreModule,
+    MeModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

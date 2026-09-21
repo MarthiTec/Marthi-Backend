@@ -6,6 +6,8 @@ import {
   PlanId,
   PrismaClient,
   ProductStatus,
+  StockCondition,
+  StockKind,
   TotemMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -164,8 +166,13 @@ async function main() {
 
   await prisma.totemSettings.upsert({
     where: { storeId: STORE_ID },
-    update: { mode: TotemMode.kiosk },
-    create: { storeId: STORE_ID, mode: TotemMode.kiosk },
+    update: { mode: TotemMode.kiosk, exitPassword: 'cellponto' },
+    create: {
+      storeId: STORE_ID,
+      mode: TotemMode.kiosk,
+      exitPassword: 'cellponto',
+      shareStockWithErp: false,
+    },
   });
 
   const userId = `password:${email}`;
@@ -446,6 +453,105 @@ async function main() {
       },
     });
   }
+
+  await prisma.customer.upsert({
+    where: { id: 'CLI-ANA' },
+    update: { name: 'Ana Souza', phone: '11988880001', phoneDigits: '11988880001' },
+    create: {
+      id: 'CLI-ANA',
+      storeId: STORE_ID,
+      name: 'Ana Souza',
+      phone: '11988880001',
+      phoneDigits: '11988880001',
+      document: '12345678901',
+      email: 'ana@cliente.local',
+      city: 'São Paulo',
+      zipCode: '01310100',
+      street: 'Avenida Paulista',
+      number: '1000',
+      neighborhood: 'Bela Vista',
+      state: 'SP',
+      active: true,
+    },
+  });
+  await prisma.customer.upsert({
+    where: { id: 'CLI-CARLOS' },
+    update: { name: 'Carlos Lima', phone: '11988880002', phoneDigits: '11988880002' },
+    create: {
+      id: 'CLI-CARLOS',
+      storeId: STORE_ID,
+      name: 'Carlos Lima',
+      phone: '11988880002',
+      phoneDigits: '11988880002',
+      document: '98765432100',
+      email: 'carlos@cliente.local',
+      city: 'São Paulo',
+      zipCode: '04038001',
+      street: 'Rua Domingos de Morais',
+      number: '500',
+      neighborhood: 'Vila Mariana',
+      state: 'SP',
+      active: true,
+    },
+  });
+
+  await prisma.stockItem.upsert({
+    where: { id: 'STK-TELA' },
+    update: { qty: 5, cost: 280, price: 450 },
+    create: {
+      id: 'STK-TELA',
+      storeId: STORE_ID,
+      name: 'Tela iPhone 13',
+      sku: 'PEC-TELA-13',
+      barcode: '789100000001',
+      qty: 5,
+      minQty: 1,
+      cost: 280,
+      price: 450,
+      kind: StockKind.part,
+      condition: StockCondition.new,
+      color: 'Preto',
+      capacity: '',
+    },
+  });
+  await prisma.stockItem.upsert({
+    where: { id: 'STK-BATERIA' },
+    update: { qty: 8, cost: 90, price: 180 },
+    create: {
+      id: 'STK-BATERIA',
+      storeId: STORE_ID,
+      name: 'Bateria iPhone 12',
+      sku: 'PEC-BAT-12',
+      barcode: '789100000002',
+      qty: 8,
+      minQty: 2,
+      cost: 90,
+      price: 180,
+      kind: StockKind.part,
+      condition: StockCondition.new,
+    },
+  });
+  await prisma.stockItem.upsert({
+    where: { id: 'STK-DEMO-APARELHO' },
+    update: { qty: 2, cost: 1200, price: 1899 },
+    create: {
+      id: 'STK-DEMO-APARELHO',
+      storeId: STORE_ID,
+      name: 'iPhone 12 128 GB',
+      sku: 'DEV-IP12-128',
+      barcode: '789100000003',
+      imei: '356938035643809',
+      qty: 2,
+      minQty: 0,
+      cost: 1200,
+      price: 1899,
+      kind: StockKind.device,
+      condition: StockCondition.used,
+      color: 'Preto',
+      capacity: '128 GB',
+      showOnTotem: false,
+    },
+  });
 
   console.log(`Seed concluído. Loja ${STORE_ID}. Login: ${email}`);
 }

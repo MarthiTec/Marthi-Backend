@@ -61,7 +61,9 @@ async function bootstrap() {
   if (config.get('SWAGGER_ENABLED') === 'true') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Marthi Totem API')
-      .setDescription('Backend da aplicação de totem para venda de produtos')
+      .setDescription(
+        'Backend da plataforma Marthi (totem + painel ERP/OS/PDV). Fotos e assinatura da OS são data URL em TEXT (MVP, ~400kb).',
+      )
       .setVersion('0.1.0')
       .addBearerAuth()
       .build();
