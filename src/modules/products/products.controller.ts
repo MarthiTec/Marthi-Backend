@@ -1,15 +1,17 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../../common/decorators/public.decorator';
 import { ProductsService } from './products.service';
 
+/** Catálogo público: totem e home leem sem JWT. */
 @ApiTags('products')
-@ApiBearerAuth()
+@Public()
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar produtos do catálogo' })
+  @ApiOperation({ summary: 'Listar produtos do catálogo (totem)' })
   list() {
     return this.productsService.list();
   }

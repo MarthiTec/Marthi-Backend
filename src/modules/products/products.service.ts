@@ -35,12 +35,37 @@ export class ProductsService {
 
   async list(storeId = DEMO_STORE_ID) {
     const products = await this.prisma.product.findMany({
-      where: { storeId },
-      include: { brand: true },
+      where: { storeId, status: 'active' },
+      include: {
+        brand: true,
+        images: { orderBy: { sort: 'asc' } },
+        allowedValues: {
+          include: {
+            value: { include: { attribute: true } },
+          },
+        },
+      },
       orderBy: { sort: 'asc' },
     });
 
-    return products.map((product) => this.toProduct(product));
+    return products.map((product) => {
+      const attrs: Record<string, string[]> = {};
+      for (const row of product.allowedValues) {
+        const attr = row.value.attribute;
+        if (!attr.useOnTotem) continue;
+        const list = attrs[attr.id] ?? [];
+        if (!list.includes(row.value.value)) list.push(row.value.value);
+        attrs[attr.id] = list;
+      }
+
+      return {
+        ...this.toProduct(product),
+        brandSlug: product.brand?.slug ?? null,
+        brandName: product.brand?.name ?? null,
+        images: product.images.map((image) => image.url),
+        attrs,
+      };
+    });
   }
 
   async findById(productId: string) {

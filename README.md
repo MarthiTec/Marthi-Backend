@@ -87,7 +87,10 @@ Altere esses valores em produção. Os secrets JWT no `.env` também precisam se
 | `GET` | `/api/v1/auth/me` | Bearer token |
 | `POST` | `/api/v1/partners/signup` | público |
 | `GET` | `/api/v1/partners/signup/pending` | Bearer token |
-| `GET` | `/api/v1/products` | Bearer token |
+| `GET` | `/api/v1/products` | público (totem) |
+| `GET` | `/api/v1/products/:id` | público |
+| `GET` | `/api/v1/products/:id/images` | público |
+| `GET` | `/api/v1/products/:id/variants` | público |
 | `GET` | `/health` | público |
 | `GET` | `/api/v1/docs` | Swagger |
 
