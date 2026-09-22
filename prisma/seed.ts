@@ -1,6 +1,7 @@
 import {
   AuthProvider,
   DocumentType,
+  EmployeeRole,
   ModuleId,
   PaymentType,
   PlanId,
@@ -9,6 +10,7 @@ import {
   StockCondition,
   StockKind,
   TotemMode,
+  AccessArea,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -550,6 +552,104 @@ async function main() {
       color: 'Preto',
       capacity: '128 GB',
       showOnTotem: false,
+    },
+  });
+
+  const allAreas: AccessArea[] = [
+    AccessArea.totem,
+    AccessArea.pdv,
+    AccessArea.os,
+    AccessArea.erp_customers,
+    AccessArea.erp_stock,
+    AccessArea.erp_attrs,
+    AccessArea.erp_prices,
+    AccessArea.erp_payments,
+    AccessArea.erp_finance,
+    AccessArea.erp_sellers,
+    AccessArea.erp_suppliers,
+    AccessArea.erp_employees,
+    AccessArea.erp_audit,
+    AccessArea.erp_invoices,
+    AccessArea.erp_fiscal,
+    AccessArea.ecommerce,
+    AccessArea.erp_plan,
+  ];
+
+  await prisma.employee.upsert({
+    where: { id: 'EMP-ADMIN' },
+    update: {
+      userEmail: email,
+      isSystemUser: true,
+      role: EmployeeRole.admin,
+      accessAreas: allAreas,
+      active: true,
+    },
+    create: {
+      id: 'EMP-ADMIN',
+      storeId: STORE_ID,
+      name: 'Administrador da loja',
+      phone: '',
+      email,
+      document: '',
+      role: EmployeeRole.admin,
+      isSystemUser: true,
+      userEmail: email,
+      accessAreas: allAreas,
+      active: true,
+    },
+  });
+
+  await prisma.employee.upsert({
+    where: { id: 'EMP-ANA' },
+    update: {
+      name: 'Ana Costa',
+      role: EmployeeRole.operator,
+      accessAreas: [AccessArea.os, AccessArea.erp_stock, AccessArea.erp_customers],
+    },
+    create: {
+      id: 'EMP-ANA',
+      storeId: STORE_ID,
+      name: 'Ana Costa',
+      phone: '(24) 99900-1111',
+      email: 'ana@loja.local',
+      document: '',
+      role: EmployeeRole.operator,
+      isSystemUser: false,
+      userEmail: '',
+      accessAreas: [AccessArea.os, AccessArea.erp_stock, AccessArea.erp_customers],
+      active: true,
+    },
+  });
+
+  await prisma.seller.upsert({
+    where: { id: 'VEN-BRUNO' },
+    update: { name: 'Bruno Vendas', commissionPercent: 2, active: true },
+    create: {
+      id: 'VEN-BRUNO',
+      storeId: STORE_ID,
+      name: 'Bruno Vendas',
+      phone: '(24) 98800-2222',
+      email: 'bruno@loja.local',
+      document: '',
+      commissionPercent: 2,
+      active: true,
+    },
+  });
+
+  await prisma.supplier.upsert({
+    where: { id: 'FOR-CELSUL' },
+    update: { name: 'Distribuidora Celular Sul', tradeName: 'CelSul' },
+    create: {
+      id: 'FOR-CELSUL',
+      storeId: STORE_ID,
+      name: 'Distribuidora Celular Sul',
+      tradeName: 'CelSul',
+      document: '12.345.678/0001-90',
+      phone: '(21) 3333-4444',
+      email: 'compras@celsul.local',
+      city: 'Rio de Janeiro',
+      notes: 'Peças e aparelhos',
+      active: true,
     },
   });
 

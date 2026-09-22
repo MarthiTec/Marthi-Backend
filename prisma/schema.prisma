@@ -182,6 +182,37 @@ enum ChecklistMark {
   @@map("checklist_mark")
 }
 
+enum EmployeeRole {
+  admin
+  manager
+  operator
+  seller
+
+  @@map("employee_role")
+}
+
+enum AccessArea {
+  totem
+  pdv
+  os
+  erp_customers
+  erp_stock
+  erp_attrs
+  erp_prices
+  erp_payments
+  erp_finance
+  erp_sellers
+  erp_suppliers
+  erp_employees
+  erp_audit
+  erp_invoices
+  erp_fiscal
+  ecommerce
+  erp_plan
+
+  @@map("access_area")
+}
+
 model Store {
   id           String       @id
   tradeName    String       @map("trade_name")
@@ -215,6 +246,9 @@ model Store {
   productAttributes ProductAttribute[]
   entitlement       StoreEntitlement?
   totemSettings     TotemSettings?
+  sellers           Seller[]
+  suppliers         Supplier[]
+  employees         Employee[]
 
   @@map("stores")
 }
@@ -244,6 +278,65 @@ model OperatorProfile {
   photo       String?
 
   @@map("operator_profiles")
+}
+
+model Seller {
+  id                String   @id
+  storeId           String   @map("store_id")
+  store             Store    @relation(fields: [storeId], references: [id])
+  name              String
+  phone             String   @default("")
+  email             String   @default("")
+  document          String   @default("")
+  commissionPercent Decimal  @default(0) @map("commission_percent") @db.Decimal(6, 2)
+  active            Boolean  @default(true)
+  employeeId        String?  @map("employee_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([storeId, name], map: "idx_sellers_store_name")
+  @@map("sellers")
+}
+
+model Supplier {
+  id        String   @id
+  storeId   String   @map("store_id")
+  store     Store    @relation(fields: [storeId], references: [id])
+  name      String
+  tradeName String   @default("") @map("trade_name")
+  document  String   @default("")
+  phone     String   @default("")
+  email     String   @default("")
+  city      String   @default("")
+  notes     String   @default("")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([storeId, name], map: "idx_suppliers_store_name")
+  @@map("suppliers")
+}
+
+model Employee {
+  id           String       @id
+  storeId      String       @map("store_id")
+  store        Store        @relation(fields: [storeId], references: [id])
+  name         String
+  phone        String       @default("")
+  email        String       @default("")
+  document     String       @default("")
+  role         EmployeeRole @default(operator)
+  isSystemUser Boolean      @default(false) @map("is_system_user")
+  userEmail    String       @default("") @map("user_email")
+  accessAreas  AccessArea[] @map("access_areas")
+  active       Boolean      @default(true)
+  sellerId     String?      @map("seller_id")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@index([storeId, name], map: "idx_employees_store_name")
+  @@index([storeId, userEmail], map: "idx_employees_store_email")
+  @@map("employees")
 }
 
 model StoreEntitlement {

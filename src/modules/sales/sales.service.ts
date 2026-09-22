@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import {
   FinanceSource,
   FinanceType,
+  PosTicket,
+  PosTicketAttribute,
+  Prisma,
   SalesOrder,
   SalesOrderLine,
+  TicketSource,
   TicketStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -13,6 +17,7 @@ import { isoRequired, money, roundMoney } from '../../common/utils/money';
 import { AuthUser } from '../auth/types/auth.types';
 import { CustomersService } from '../customers/customers.service';
 import { ClosePosSaleDto } from './dto/close-pos-sale.dto';
+import { CreatePosTicketDto, PatchPosTicketDto } from './dto/pos-ticket.dto';
 
 type OrderRow = SalesOrder & { lines?: SalesOrderLine[] };
 
@@ -48,6 +53,34 @@ export function toOrderJson(row: OrderRow, withLines = false) {
   }
   return json;
 }
+
+type TicketRow = PosTicket & { attributes: PosTicketAttribute[] };
+
+export function toTicketJson(row: TicketRow) {
+  return {
+    id: row.id,
+    source: row.source,
+    status: row.status,
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    productName: row.productName,
+    attributes: row.attributes.map((item) => ({
+      id: item.attributeId,
+      name: item.name,
+      value: item.value,
+    })),
+    color: row.color,
+    storage: row.storage,
+    fulfillment: row.fulfillment,
+    payment: row.payment,
+    installment: row.installment,
+    priceLabel: row.priceLabel,
+    createdAt: isoRequired(row.createdAt),
+    closedAt: row.closedAt ? isoRequired(row.closedAt) : null,
+  };
+}
+
+const ticketInclude = { attributes: true } as const;
 
 @Injectable()
 export class SalesService {
@@ -104,7 +137,11 @@ export class SalesService {
           const ticket = await tx.posTicket.findFirst({
             where: { id: dto.ticketId, storeId },
           });
-          ticketId = ticket?.id ?? null;
+          if (!ticket) throw notFound('Ticket não encontrado.');
+          if (ticket.status === TicketStatus.cancelled) {
+            throw conflict('Ticket cancelado — não dá para fechar a venda.');
+          }
+          ticketId = ticket.id;
         }
 
         const customer = await this.customers.upsertFromPos(tx, storeId, {
@@ -178,6 +215,13 @@ export class SalesService {
           },
         });
 
+        if (ticketId) {
+          await tx.posTicket.update({
+            where: { id: ticketId },
+            data: { status: TicketStatus.sold, closedAt: new Date() },
+          });
+        }
+
         return created;
       },
       { timeout: 15000 },
@@ -185,4 +229,83 @@ export class SalesService {
 
     return toOrderJson(order, true);
   }
+
+  async listTickets(storeId: string, status?: TicketStatus) {
+    const where: Prisma.PosTicketWhereInput = { storeId };
+    if (status) where.status = status;
+    const rows = await this.prisma.posTicket.findMany({
+      where,
+      include: ticketInclude,
+      orderBy: { createdAt: 'desc' },
+    });
+    return { items: rows.map(toTicketJson) };
+  }
+
+  async getTicket(storeId: string, id: string) {
+    return toTicketJson(await this.findTicket(storeId, id));
+  }
+
+  async createManualTicket(storeId: string, dto: CreatePosTicketDto) {
+    const row = await this.prisma.posTicket.create({
+      data: {
+        id: prefixedId('TCK'),
+        storeId,
+        source: TicketSource.manual,
+        customerName: dto.customerName.trim(),
+        customerPhone: dto.customerPhone.trim(),
+        productName: dto.productName.trim(),
+        color: dto.color ?? '',
+        storage: dto.storage ?? '',
+        fulfillment: dto.fulfillment ?? '',
+        payment: dto.payment,
+        installment: dto.installment || null,
+        priceLabel: dto.priceLabel ?? '',
+        attributes: dto.attributes?.length
+          ? {
+              create: uniqueTicketAttrs(dto.attributes).map((item) => ({
+                attributeId: item.id,
+                name: item.name,
+                value: item.value,
+              })),
+            }
+          : undefined,
+      },
+      include: ticketInclude,
+    });
+    return toTicketJson(row);
+  }
+
+  async patchTicket(storeId: string, id: string, dto: PatchPosTicketDto) {
+    await this.findTicket(storeId, id);
+    const closedAt =
+      dto.status === TicketStatus.open ? null : new Date();
+    const row = await this.prisma.posTicket.update({
+      where: { id },
+      data: { status: dto.status, closedAt },
+      include: ticketInclude,
+    });
+    return toTicketJson(row);
+  }
+
+  private async findTicket(storeId: string, id: string) {
+    const row = await this.prisma.posTicket.findFirst({
+      where: { id, storeId },
+      include: ticketInclude,
+    });
+    if (!row) throw notFound('Ticket não encontrado.');
+    return row;
+  }
+}
+
+function uniqueTicketAttrs(
+  items: { id: string; name: string; value: string }[],
+) {
+  const seen = new Set<string>();
+  const next: typeof items = [];
+  for (const item of items) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    next.push(item);
+  }
+  return next;
 }

@@ -22,7 +22,7 @@ prisma/                   schema, migrations e seed
 
 Na raiz ficam só os arquivos que as ferramentas exigem (`package.json`, `tsconfig`, `nest-cli`, `.gitignore`, `.env.example`).
 
-Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google, cadastro de parceiro e health.
+Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google, cadastro de parceiro, health, catálogo `/products` e `POST /api/v1/totem/leads` (fila PDV).
 
 ## Deploy Discloud (Site público)
 
@@ -92,6 +92,7 @@ Altere esses valores em produção. Os secrets JWT no `.env` também precisam se
 | `GET` | `/api/v1/products/:id/images` | público |
 | `GET` | `/api/v1/products/:id/variants` | público |
 | `GET` | `/health` | público |
+| `POST` | `/api/v1/totem/leads` | público (cria ticket `open` na Cell Ponto) |
 | `GET` | `/api/v1/docs` | Swagger |
 
 JWT único, 7 dias. Resposta de login no contrato da UI:
@@ -130,6 +131,28 @@ Rotas autenticadas enviam:
 Authorization: Bearer <token>
 ```
 
+## Fase 3 P0 — Registry + fila totem/PDV
+
+Leads do totem e tickets da fila passam a ser o Nest (`https://marthi-backend.discloud.app`). O Site totem **não** precisa mais do Express para `/totem/leads` e `/pos/tickets`.
+
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| `GET/POST` | `/api/v1/sellers` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/sellers/:id` | Bearer (DELETE = `active=false`) |
+| `GET/POST` | `/api/v1/suppliers` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/suppliers/:id` | Bearer |
+| `GET/POST` | `/api/v1/employees` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/employees/:id` | Bearer |
+| `GET` | `/api/v1/me/access` | Bearer `{ role, accessAreas, employeeId?, sellerId? }` |
+| `POST` | `/api/v1/totem/leads` | público |
+| `GET` | `/api/v1/pos/tickets` | Bearer (`data.items`, query `status?`) |
+| `GET/PATCH` | `/api/v1/pos/tickets/:id` | Bearer |
+| `POST` | `/api/v1/pos/tickets` | Bearer (source `manual`) |
+
+`POST /api/v1/pos/sales` com `ticketId` marca o ticket `sold` + `closedAt` na mesma transação.
+
+Seed P0: `EMP-ADMIN` (`teste@marthi.com.br`, todas as áreas), `EMP-ANA`, `VEN-BRUNO`, `FOR-CELSUL`.
+
 ## Scripts
 
 | Script | Uso |
@@ -146,8 +169,7 @@ Authorization: Bearer <token>
 
 ## Próximos módulos
 
-- Fila PDV / totem leads
-- Clientes, estoque, tabelas e pagamentos
-- `POST /pos/sales` transacional
-- Ordens de serviço + ledger
-- Plano, totem settings e perfil do operador
+- P1: livro financeiro, almoxarifado/lotes/kits, notas de estoque
+- P2: caixa, cadastro fiscal
+- P3: CRM / e-commerce stubs
+- P4: auditoria / analytics totem

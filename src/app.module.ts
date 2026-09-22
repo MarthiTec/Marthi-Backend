@@ -21,6 +21,8 @@ import { SalesModule } from './modules/sales/sales.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { StoreModule } from './modules/store/store.module';
 import { MeModule } from './modules/me/me.module';
+import { RegistryModule } from './modules/registry/registry.module';
+import { TotemModule } from './modules/totem/totem.module';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { MeModule } from './modules/me/me.module';
     WorkOrdersModule,
     StoreModule,
     MeModule,
+    RegistryModule,
+    TotemModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
