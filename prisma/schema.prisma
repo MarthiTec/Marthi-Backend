@@ -276,6 +276,8 @@ model Store {
   ecommerceChannels       EcommerceChannelState[]
   ecommerceListings       EcommerceListing[]
   ecommerceOrders         EcommerceOrder[]
+  auditEntries            AuditEntry[]
+  totemClicks             TotemClickEvent[]
 
   @@map("stores")
 }
@@ -1671,4 +1673,40 @@ model EcommerceOrder {
 
   @@index([storeId, channelId], map: "idx_ecom_orders_channel")
   @@map("ecommerce_orders")
+}
+
+enum AuditKind {
+  access
+  action
+
+  @@map("audit_kind")
+}
+
+model AuditEntry {
+  id         String    @id
+  storeId    String    @map("store_id")
+  store      Store     @relation(fields: [storeId], references: [id])
+  kind       AuditKind
+  at         DateTime  @default(now())
+  actorName  String    @map("actor_name")
+  actorEmail String    @map("actor_email")
+  action     String
+  detail     String    @default("")
+  path       String    @default("")
+
+  @@index([storeId, at(sort: Desc)], map: "idx_audit_store_at")
+  @@index([storeId, kind], map: "idx_audit_store_kind")
+  @@map("audit_entries")
+}
+
+model TotemClickEvent {
+  id          String   @id
+  storeId     String   @map("store_id")
+  store       Store    @relation(fields: [storeId], references: [id])
+  productId   String   @map("product_id")
+  productName String   @map("product_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([storeId, createdAt(sort: Desc)], map: "idx_totem_clicks_store")
+  @@map("totem_click_events")
 }

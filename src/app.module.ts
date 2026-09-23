@@ -31,6 +31,7 @@ import { FiscalCatalogModule } from './modules/fiscal-catalog/fiscal-catalog.mod
 import { FiscalModule } from './modules/fiscal/fiscal.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { EcommerceModule } from './modules/ecommerce/ecommerce.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { EcommerceModule } from './modules/ecommerce/ecommerce.module';
     FiscalModule,
     CrmModule,
     EcommerceModule,
+    AuditModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -22,7 +22,7 @@ prisma/                   schema, migrations e seed
 
 Na raiz ficam só os arquivos que as ferramentas exigem (`package.json`, `tsconfig`, `nest-cli`, `.gitignore`, `.env.example`).
 
-Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google, cadastro de parceiro, health, catálogo `/products` e `POST /api/v1/totem/leads` (fila PDV).
+Rotas privadas exigem Bearer token. Rotas públicas: auth providers/login/google, cadastro de parceiro, health, catálogo `/products`, `POST /api/v1/totem/leads` (fila PDV) e `POST /api/v1/totem/analytics/clicks`.
 
 ## Deploy Discloud (Site público)
 
@@ -93,6 +93,7 @@ Altere esses valores em produção. Os secrets JWT no `.env` também precisam se
 | `GET` | `/api/v1/products/:id/variants` | público |
 | `GET` | `/health` | público |
 | `POST` | `/api/v1/totem/leads` | público (cria ticket `open` na Cell Ponto) |
+| `POST` | `/api/v1/totem/analytics/clicks` | público (clique de produto na Cell Ponto) |
 | `GET` | `/api/v1/docs` | Swagger |
 
 JWT único, 7 dias. Resposta de login no contrato da UI:
@@ -244,6 +245,21 @@ Credenciais de canal são AES-256-GCM (`CREDENTIALS_SECRET` / `JWT_SECRET`). Con
 
 Seed P3: 5 canais desconectados. Sem leads mock.
 
+## Fase 3 P4 — Auditoria + analytics totem
+
+Sem interceptor de mutações (o painel envia `POST /audit`). Sem seed de eventos.
+
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| `GET` | `/api/v1/audit` | Bearer (`kind?`, `from?`, `to?`, `q?`; cap 400) |
+| `POST` | `/api/v1/audit` | Bearer `{ kind, action, actorName?, actorEmail?, detail?, path? }` |
+| `POST` | `/api/v1/totem/analytics/clicks` | público `{ productId, productName }` → Cell Ponto |
+| `GET` | `/api/v1/totem/analytics/summary` | Bearer (ranking dia+total, stats do dia) |
+
+IDs `AUD-` e `CLK-`. Audit podado em 400 por loja; cliques em 2000. Dia civil em `America/Sao_Paulo`. Summary inclui `ranking`, `clicksToday`, `clicksTotal`, `proposalsToday`, `soldToday`, `openToday`, `uniqueBuyersToday`, `buyersToday`.
+
+Fase 3 no backend está completa (P0–P4). Próximo passo: wire no Frontend (tirar `localStorage` dessas stores).
+
 ## Scripts
 
 | Script | Uso |
@@ -258,6 +274,7 @@ Seed P3: 5 canais desconectados. Sem leads mock.
 | `npm run docker:up` | sobe o PostgreSQL |
 | `npm run docker:down` | derruba o PostgreSQL |
 
-## Próximos módulos
+## Próximos passos
 
-- P4: auditoria / analytics totem
+- Wire no Frontend das stores P0–P4 (registry, fila, livro, caixa, fiscal, CRM, e-com, audit, analytics).
+- Fora desta fase: SEFAZ real, OAuth de marketplaces.
