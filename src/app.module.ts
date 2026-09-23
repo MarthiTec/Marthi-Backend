@@ -29,6 +29,8 @@ import { StockInvoicesModule } from './modules/stock-invoices/stock-invoices.mod
 import { CashModule } from './modules/cash/cash.module';
 import { FiscalCatalogModule } from './modules/fiscal-catalog/fiscal-catalog.module';
 import { FiscalModule } from './modules/fiscal/fiscal.module';
+import { CrmModule } from './modules/crm/crm.module';
+import { EcommerceModule } from './modules/ecommerce/ecommerce.module';
 
 @Module({
   imports: [
@@ -62,6 +64,8 @@ import { FiscalModule } from './modules/fiscal/fiscal.module';
     CashModule,
     FiscalCatalogModule,
     FiscalModule,
+    CrmModule,
+    EcommerceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

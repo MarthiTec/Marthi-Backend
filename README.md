@@ -219,6 +219,31 @@ Sem transmissão SEFAZ. No máximo **1 sessão `open` por loja**. `POST /pos/sal
 
 Seed P2: settings do emissor (homologação, defaults vazios) + CST/cClassTrib mínimos. Sem sessão de caixa.
 
+## Fase 3 P3 — CRM + e-commerce (stubs, sem OAuth)
+
+Sem seed `CRM-MOCK-*` e sem pedidos fake de marketplace.
+
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| `GET/POST` | `/api/v1/crm/leads` | Bearer (`stage?`) |
+| `GET/PATCH` | `/api/v1/crm/leads/:id` | Bearer |
+| `POST` | `/api/v1/crm/leads/:id/claim` | Bearer `{ sellerId }` exclusivo |
+| `POST` | `/api/v1/crm/leads/:id/move` | Bearer `{ stage, sellerId? }` |
+| `GET/POST` | `/api/v1/crm/leads/:id/activities` | Bearer |
+| `GET/POST` | `/api/v1/crm/leads/:id/messages` | Bearer |
+| `GET/PUT` | `/api/v1/crm/profiles/:sellerId` | Bearer |
+| `GET/POST` | `/api/v1/crm/messages/sellers` | Bearer (`sellerA` + `sellerB`) |
+| `GET` | `/api/v1/ecommerce/channels` | Bearer |
+| `GET/PUT` | `/api/v1/ecommerce/channels/:id` | Bearer |
+| `POST` | `/api/v1/ecommerce/channels/:id/connect` · `/disconnect` · `/sync` | Bearer |
+| `GET/POST` | `/api/v1/ecommerce/listings` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/ecommerce/listings/:id` | Bearer |
+| `GET` | `/api/v1/ecommerce/orders` | Bearer |
+
+Credenciais de canal são AES-256-GCM (`CREDENTIALS_SECRET` / `JWT_SECRET`). Connect/sync são stubs (sem OAuth real). `channelId`: `mercadolivre` \| `shopee` \| `ifood` \| `amazon` \| `tray`.
+
+Seed P3: 5 canais desconectados. Sem leads mock.
+
 ## Scripts
 
 | Script | Uso |
@@ -235,5 +260,4 @@ Seed P2: settings do emissor (homologação, defaults vazios) + CST/cClassTrib m
 
 ## Próximos módulos
 
-- P3: CRM / e-commerce stubs
 - P4: auditoria / analytics totem

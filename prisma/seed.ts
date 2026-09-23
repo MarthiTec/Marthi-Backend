@@ -15,6 +15,9 @@ import {
   FiscalSefazEnvironment,
   FiscalStorageMode,
   FiscalTaxSyncSource,
+  EcommerceChannelId,
+  EcommerceChannelKind,
+  EcommerceConnectionStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -811,6 +814,53 @@ async function main() {
         'Tabelas iniciais (seed). Sincronize com a API SVRS quando o certificado estiver no Nest.',
     },
   });
+
+  const ecommerceSeed: Array<{
+    channelId: EcommerceChannelId;
+    kind: EcommerceChannelKind;
+    message: string;
+  }> = [
+    {
+      channelId: EcommerceChannelId.mercadolivre,
+      kind: EcommerceChannelKind.marketplace,
+      message: 'Preencha App ID, Secret e tokens OAuth.',
+    },
+    {
+      channelId: EcommerceChannelId.shopee,
+      kind: EcommerceChannelKind.marketplace,
+      message: 'Informe Partner ID, Partner Key e Shop ID.',
+    },
+    {
+      channelId: EcommerceChannelId.ifood,
+      kind: EcommerceChannelKind.marketplace,
+      message: 'Client ID, Secret e Merchant ID obrigatórios.',
+    },
+    {
+      channelId: EcommerceChannelId.amazon,
+      kind: EcommerceChannelKind.marketplace,
+      message: 'Configure LWA + Seller ID + Marketplace ID.',
+    },
+    {
+      channelId: EcommerceChannelId.tray,
+      kind: EcommerceChannelKind.hub,
+      message: 'URL da loja + Consumer Key/Secret.',
+    },
+  ];
+  for (const item of ecommerceSeed) {
+    await prisma.ecommerceChannelState.upsert({
+      where: {
+        storeId_channelId: { storeId: STORE_ID, channelId: item.channelId },
+      },
+      update: {},
+      create: {
+        storeId: STORE_ID,
+        channelId: item.channelId,
+        kind: item.kind,
+        status: EcommerceConnectionStatus.disconnected,
+        message: item.message,
+      },
+    });
+  }
 
   console.log(`Seed concluído. Loja ${STORE_ID}. Login: ${email}`);
 }

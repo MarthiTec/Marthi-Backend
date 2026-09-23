@@ -270,6 +270,12 @@ model Store {
   fiscalCstCodes          FiscalCstCode[]
   fiscalCClassTribs       FiscalCClassTrib[]
   fiscalTaxTablesMeta     FiscalTaxTablesMeta?
+  crmLeads                CrmLead[]
+  crmMessages             CrmMessage[]
+  crmProfiles             CrmSellerProfile[]
+  ecommerceChannels       EcommerceChannelState[]
+  ecommerceListings       EcommerceListing[]
+  ecommerceOrders         EcommerceOrder[]
 
   @@map("stores")
 }
@@ -314,6 +320,7 @@ model Seller {
   employeeId        String?  @map("employee_id")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
+  crmProfile        CrmSellerProfile?
 
   @@index([storeId, name], map: "idx_sellers_store_name")
   @@map("sellers")
@@ -637,6 +644,7 @@ model StockItem {
   kitItems                ProductKitItem[]
   warehouseMoves          WarehouseMove[]
   invoiceLines            StockInvoiceLine[]
+  ecommerceListings       EcommerceListing[]
 
   @@index([storeId, name], map: "idx_stock_store_name")
   @@index([storeId, sku], map: "idx_stock_sku")
@@ -1427,4 +1435,240 @@ model FiscalTaxTablesMeta {
   updatedAt       DateTime             @updatedAt @map("updated_at")
 
   @@map("fiscal_tax_tables_meta")
+}
+
+enum CrmStage {
+  leads
+  waiting
+  attending
+  payment
+  won
+  lost
+
+  @@map("crm_stage")
+}
+
+enum CrmLeadSource {
+  demo
+  partner
+  contact
+  manual
+  careers
+
+  @@map("crm_lead_source")
+}
+
+enum CrmActivityKind {
+  activity
+  comment
+  message
+  schedule
+  task
+  system
+
+  @@map("crm_activity_kind")
+}
+
+enum CrmMessageKind {
+  lead
+  sellers
+
+  @@map("crm_message_kind")
+}
+
+enum EcommerceChannelId {
+  mercadolivre
+  shopee
+  ifood
+  amazon
+  tray
+
+  @@map("ecommerce_channel_id")
+}
+
+enum EcommerceChannelKind {
+  marketplace
+  hub
+
+  @@map("ecommerce_channel_kind")
+}
+
+enum EcommerceConnectionStatus {
+  disconnected
+  connecting
+  connected
+  error
+
+  @@map("ecommerce_connection_status")
+}
+
+enum EcommerceListingStatus {
+  active
+  paused
+  error
+  draft
+
+  @@map("ecommerce_listing_status")
+}
+
+enum EcommerceOrderStatus {
+  new
+  paid
+  shipped
+  delivered
+  cancelled
+
+  @@map("ecommerce_order_status")
+}
+
+model CrmLead {
+  id            String        @id
+  storeId       String        @map("store_id")
+  store         Store         @relation(fields: [storeId], references: [id])
+  name          String
+  email         String        @default("")
+  whatsapp      String        @default("")
+  source        CrmLeadSource
+  interest      String        @default("")
+  value         Decimal       @default(0) @db.Decimal(12, 2)
+  stage         CrmStage      @default(leads)
+  ownerSellerId String?       @map("owner_seller_id")
+  ownerName     String        @default("") @map("owner_name")
+  claimedAt     DateTime?     @map("claimed_at")
+  notes         String        @default("")
+  externalRef   String?       @map("external_ref")
+  customerId    String?       @map("customer_id")
+  paidAt        DateTime?     @map("paid_at")
+  graduation    String        @default("")
+  polo          String        @default("")
+  sourceInfo    String        @default("") @map("source_info")
+  hideContact   Boolean       @default(false) @map("hide_contact")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  activities    CrmActivity[]
+  messages      CrmMessage[]
+
+  @@index([storeId, stage], map: "idx_crm_leads_store_stage")
+  @@index([storeId, ownerSellerId], map: "idx_crm_leads_owner")
+  @@map("crm_leads")
+}
+
+model CrmActivity {
+  id           String          @id
+  leadId       String          @map("lead_id")
+  lead         CrmLead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  kind         CrmActivityKind
+  title        String
+  body         String
+  fromSellerId String?         @map("from_seller_id")
+  fromName     String          @default("") @map("from_name")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  dueAt        DateTime?       @map("due_at")
+
+  @@index([leadId, createdAt(sort: Desc)], map: "idx_crm_activities_lead")
+  @@map("crm_activities")
+}
+
+model CrmMessage {
+  id            String         @id
+  storeId       String         @map("store_id")
+  store         Store          @relation(fields: [storeId], references: [id])
+  kind          CrmMessageKind
+  leadId        String?        @map("lead_id")
+  lead          CrmLead?       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sellerPairKey String?        @map("seller_pair_key")
+  fromSellerId  String?        @map("from_seller_id")
+  fromName      String         @default("") @map("from_name")
+  fromLead      Boolean        @default(false) @map("from_lead")
+  body          String
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  @@index([storeId, kind, createdAt], map: "idx_crm_messages_store")
+  @@index([leadId, createdAt], map: "idx_crm_messages_lead")
+  @@index([sellerPairKey, createdAt], map: "idx_crm_messages_pair")
+  @@map("crm_messages")
+}
+
+model CrmSellerProfile {
+  sellerId      String   @id @map("seller_id")
+  seller        Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  storeId       String   @map("store_id")
+  store         Store    @relation(fields: [storeId], references: [id])
+  displayName   String   @map("display_name")
+  handle        String
+  bio           String   @default("")
+  avatarUrl     String   @default("") @map("avatar_url")
+  coverUrl      String   @default("") @map("cover_url")
+  city          String   @default("")
+  specialty     String   @default("Comercial")
+  whatsapp      String   @default("")
+  instagram     String   @default("")
+  linkedin      String   @default("")
+  website       String   @default("")
+  publicProfile Boolean  @default(true) @map("public_profile")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([storeId, handle], map: "uq_crm_profiles_handle")
+  @@map("crm_seller_profiles")
+}
+
+model EcommerceChannelState {
+  storeId          String                     @map("store_id")
+  store            Store                      @relation(fields: [storeId], references: [id])
+  channelId        EcommerceChannelId         @map("channel_id")
+  kind             EcommerceChannelKind       @default(marketplace)
+  status           EcommerceConnectionStatus  @default(disconnected)
+  storeName        String                     @default("") @map("store_name")
+  lastSyncAt       DateTime?                  @map("last_sync_at")
+  message          String                     @default("")
+  credentialsEnc   String                     @default("") @map("credentials_enc")
+  updatedAt        DateTime                   @updatedAt @map("updated_at")
+  listings         EcommerceListing[]
+  orders           EcommerceOrder[]
+
+  @@id([storeId, channelId])
+  @@map("ecommerce_channel_states")
+}
+
+model EcommerceListing {
+  id         String                  @id
+  storeId    String                  @map("store_id")
+  store      Store                   @relation(fields: [storeId], references: [id])
+  channelId  EcommerceChannelId      @map("channel_id")
+  channel    EcommerceChannelState   @relation(fields: [storeId, channelId], references: [storeId, channelId])
+  stockId    String                  @map("stock_id")
+  stock      StockItem               @relation(fields: [stockId], references: [id])
+  externalId String                  @map("external_id")
+  title      String
+  sku        String                  @default("")
+  price      Decimal                 @db.Decimal(12, 2)
+  qty        Int
+  images     String[]
+  status     EcommerceListingStatus  @default(draft)
+  syncedAt   DateTime?               @map("synced_at")
+  message    String                  @default("")
+  createdAt  DateTime                @default(now()) @map("created_at")
+  updatedAt  DateTime                @updatedAt @map("updated_at")
+
+  @@index([storeId, channelId], map: "idx_ecom_listings_channel")
+  @@map("ecommerce_listings")
+}
+
+model EcommerceOrder {
+  id           String                @id
+  storeId      String                @map("store_id")
+  store        Store                 @relation(fields: [storeId], references: [id])
+  channelId    EcommerceChannelId    @map("channel_id")
+  channel      EcommerceChannelState @relation(fields: [storeId, channelId], references: [storeId, channelId])
+  externalId   String                @map("external_id")
+  customerName String                @map("customer_name")
+  amount       Decimal               @db.Decimal(12, 2)
+  status       EcommerceOrderStatus  @default(new)
+  stockId      String?               @map("stock_id")
+  listingId    String?               @map("listing_id")
+  qty          Int?
+  createdAt    DateTime              @default(now()) @map("created_at")
+
+  @@index([storeId, channelId], map: "idx_ecom_orders_channel")
+  @@map("ecommerce_orders")
 }

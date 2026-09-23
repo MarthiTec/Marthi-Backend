@@ -36,3 +36,24 @@ export function decryptSecret(payload: string): string {
     return '';
   }
 }
+
+export function encryptJson(value: Record<string, string>): string {
+  const entries = Object.entries(value).filter(([, item]) => item?.trim());
+  if (entries.length === 0) return '';
+  return encryptSecret(JSON.stringify(Object.fromEntries(entries)));
+}
+
+export function decryptJson(payload: string): Record<string, string> {
+  const raw = decryptSecret(payload);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Record<string, string> = {};
+    for (const [key, item] of Object.entries(parsed)) {
+      if (typeof item === 'string') out[key] = item;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
