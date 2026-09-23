@@ -60,6 +60,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsBooleanString()
   SWAGGER_ENABLED?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  FISCAL_TAX_SYNC?: string;
+
+  @IsOptional()
+  @IsString()
+  CREDENTIALS_SECRET?: string;
 }
 
 function omitBlank(config: Record<string, unknown>) {

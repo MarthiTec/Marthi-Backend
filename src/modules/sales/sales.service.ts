@@ -15,6 +15,7 @@ import { conflict, notFound } from '../../common/errors/http';
 import { prefixedId } from '../../common/utils/ids';
 import { isoRequired, money, roundMoney } from '../../common/utils/money';
 import { AuthUser } from '../auth/types/auth.types';
+import { CashService } from '../cash/cash.service';
 import { CustomersService } from '../customers/customers.service';
 import { ClosePosSaleDto } from './dto/close-pos-sale.dto';
 import { CreatePosTicketDto, PatchPosTicketDto } from './dto/pos-ticket.dto';
@@ -87,6 +88,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly customers: CustomersService,
+    private readonly cash: CashService,
   ) {}
 
   async listOrders(storeId: string) {
@@ -221,6 +223,14 @@ export class SalesService {
             data: { status: TicketStatus.sold, closedAt: new Date() },
           });
         }
+
+        await this.cash.recordSaleInTx(
+          tx,
+          storeId,
+          amount,
+          user.name,
+          `Venda ${created.id}`,
+        );
 
         return created;
       },

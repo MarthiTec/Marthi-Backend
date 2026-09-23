@@ -26,6 +26,9 @@ import { TotemModule } from './modules/totem/totem.module';
 import { FinanceBookModule } from './modules/finance-book/finance-book.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
 import { StockInvoicesModule } from './modules/stock-invoices/stock-invoices.module';
+import { CashModule } from './modules/cash/cash.module';
+import { FiscalCatalogModule } from './modules/fiscal-catalog/fiscal-catalog.module';
+import { FiscalModule } from './modules/fiscal/fiscal.module';
 
 @Module({
   imports: [
@@ -56,6 +59,9 @@ import { StockInvoicesModule } from './modules/stock-invoices/stock-invoices.mod
     FinanceBookModule,
     WarehousesModule,
     StockInvoicesModule,
+    CashModule,
+    FiscalCatalogModule,
+    FiscalModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -138,6 +138,7 @@ export class StockService {
 
   async create(storeId: string, dto: CreateStockDto) {
     await this.assertWarehouse(storeId, dto.warehouseId);
+    await this.assertFiscalClassification(storeId, dto.fiscalClassificationId);
     const row = await this.prisma.$transaction(async (tx) => {
       const created = await tx.stockItem.create({
         data: {
@@ -177,6 +178,9 @@ export class StockService {
     await this.findOwned(storeId, id);
     if (dto.warehouseId !== undefined) {
       await this.assertWarehouse(storeId, dto.warehouseId);
+    }
+    if (dto.fiscalClassificationId !== undefined) {
+      await this.assertFiscalClassification(storeId, dto.fiscalClassificationId);
     }
     const row = await this.prisma.$transaction(async (tx) => {
       await tx.stockItem.update({
@@ -238,6 +242,18 @@ export class StockService {
       throw error;
     }
     return { id, deleted: true };
+  }
+
+  private async assertFiscalClassification(
+    storeId: string,
+    fiscalClassificationId?: string | null,
+  ) {
+    const id = emptyToNull(fiscalClassificationId);
+    if (!id) return;
+    const row = await this.prisma.fiscalClassification.findFirst({
+      where: { id, storeId },
+    });
+    if (!row) throw validation('Classificação fiscal inválida.');
   }
 
   private async assertWarehouse(storeId: string, warehouseId?: string | null) {

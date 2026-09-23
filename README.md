@@ -188,6 +188,37 @@ Domínio separado de `GET/POST /finance` (extrato de caixa lógico). Saldo de co
 
 Seed P1: almoxarifados `ALX-01` (Loja) e `ALX-BANC` (Bancada OS); contas `ACC-CAIXA` (Caixa loja) e `ACC-OPER` (Conta operacional).
 
+## Fase 3 P2 — Caixa PDV + cadastro fiscal
+
+Sem transmissão SEFAZ. No máximo **1 sessão `open` por loja**. `POST /pos/sales` lança movimento `sale` na sessão aberta (mesma transação).
+
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| `GET` | `/api/v1/cash/sessions` · `/cash/sessions/open` · `/cash/sessions/:id` | Bearer |
+| `POST` | `/api/v1/cash/sessions/open` | Bearer `{ openingFloat, operatorName }` |
+| `POST` | `/api/v1/cash/sessions/:id/aporte` · `/sangria` · `/drawer` | Bearer |
+| `POST` | `/api/v1/cash/sessions/:id/close` | Bearer `{ countedCash, operatorName }` |
+| `POST` | `/api/v1/cash/sessions/:id/reopen` | Bearer |
+| `GET/POST` | `/api/v1/cash/credits` | Bearer |
+| `POST` | `/api/v1/cash/credits/:id/use` | Bearer `{ amount }` |
+| `GET/POST` | `/api/v1/cash/exchanges` | Bearer (`settleAs`: `cash` \| `credit`) |
+| `GET/POST` | `/api/v1/fiscal-classifications` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/fiscal-classifications/:id` | Bearer |
+| `GET/POST` | `/api/v1/cfops` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/cfops/:id` | Bearer |
+| `GET/POST` | `/api/v1/fecps` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/fecps/:id` | Bearer |
+| `GET/PUT` | `/api/v1/fiscal/issuer-settings` | Bearer |
+| `GET/POST` | `/api/v1/fiscal/logs` | Bearer (cap 400) |
+| `GET/PUT` | `/api/v1/fiscal/tax-tables` | Bearer |
+| `POST` | `/api/v1/fiscal/tax-tables/sync` | Bearer (stub) |
+
+`certificatePassword` e `cscToken` são aceitos no PUT e gravados com AES-256-GCM (`CREDENTIALS_SECRET` ou `JWT_SECRET`). O GET **não** devolve a senha nem o token (campos vazios + `hasCertificatePassword` / `hasCscToken`). Sync SVRS só tenta a API se `FISCAL_TAX_SYNC=true` (default off).
+
+`POST /stock` e `PATCH /stock/:id` validam `fiscalClassificationId` se informado.
+
+Seed P2: settings do emissor (homologação, defaults vazios) + CST/cClassTrib mínimos. Sem sessão de caixa.
+
 ## Scripts
 
 | Script | Uso |
@@ -204,6 +235,5 @@ Seed P1: almoxarifados `ALX-01` (Loja) e `ALX-BANC` (Bancada OS); contas `ACC-CA
 
 ## Próximos módulos
 
-- P2: caixa, cadastro fiscal
 - P3: CRM / e-commerce stubs
 - P4: auditoria / analytics totem

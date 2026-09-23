@@ -12,6 +12,9 @@ import {
   TotemMode,
   AccessArea,
   BankAccountType,
+  FiscalSefazEnvironment,
+  FiscalStorageMode,
+  FiscalTaxSyncSource,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -730,6 +733,82 @@ async function main() {
       type: BankAccountType.checking,
       initialBalance: 12500,
       active: true,
+    },
+  });
+
+  await prisma.fiscalIssuerSettings.upsert({
+    where: { storeId: STORE_ID },
+    update: {},
+    create: {
+      storeId: STORE_ID,
+      municipio: 'Rio de Janeiro',
+      uf: 'RJ',
+      cMun: '3304557',
+      environment: FiscalSefazEnvironment.homologacao,
+      storageMode: FiscalStorageMode.both,
+      cbsRateBase: 0.9,
+      ibsRateBase: 0.1,
+      issqnRateDefault: 5,
+      cloudEnabled: true,
+      cloudBucketHint: 'marthi-fiscal',
+      localRootPath: 'C:\\Marthi\\Fiscal',
+      localXmlPath: 'C:\\Marthi\\Fiscal\\XML',
+      localLogPath: 'C:\\Marthi\\Fiscal\\LOG',
+      localPdfPath: 'C:\\Marthi\\Fiscal\\PDF',
+      localPdvPath: 'C:\\Marthi\\Fiscal\\PDV',
+    },
+  });
+
+  const seedCsts = [
+    { code: '000', name: 'Tributação integral', description: 'CST IBS/CBS — tributação integral' },
+    { code: '010', name: 'Tributação com alíquotas uniformes setoriais', description: '' },
+    { code: '011', name: 'Tributação com alíquotas uniformes setoriais reduzidas', description: '' },
+    { code: '200', name: 'Alíquota reduzida', description: 'Redução de alíquota IBS/CBS' },
+    { code: '220', name: 'Alíquota reduzida com redutor de base', description: '' },
+    { code: '400', name: 'Isenção', description: '' },
+    { code: '410', name: 'Imunidade e não incidência', description: '' },
+    { code: '510', name: 'Diferimento', description: '' },
+    { code: '550', name: 'Suspensão', description: '' },
+    { code: '800', name: 'Transferência de crédito', description: '' },
+    { code: '810', name: 'Ajuste de IBS/CBS', description: '' },
+    { code: '820', name: 'Tributação em regime específico', description: '' },
+    { code: '830', name: 'Exclusão da BC', description: '' },
+  ];
+  for (const item of seedCsts) {
+    await prisma.fiscalCstCode.upsert({
+      where: { storeId_code: { storeId: STORE_ID, code: item.code } },
+      update: {},
+      create: { storeId: STORE_ID, ...item, active: true },
+    });
+  }
+
+  const seedClasses = [
+    { code: '000001', cstCode: '000', name: 'Situações tributadas integralmente pelo IBS e pela CBS', description: 'Classificação padrão' },
+    { code: '200001', cstCode: '200', name: 'Aquisições e importações com redução de alíquota', description: '' },
+    { code: '200002', cstCode: '200', name: 'Fornecimentos com redução de alíquota', description: '' },
+    { code: '200003', cstCode: '200', name: 'Redução de alíquota — cestas básicas', description: '' },
+    { code: '410001', cstCode: '410', name: 'Imunidade e não incidência', description: '' },
+    { code: '550001', cstCode: '550', name: 'Exportações de bens materiais', description: '' },
+    { code: '620001', cstCode: '620', name: 'Tributação monofásica sobre combustíveis', description: '' },
+    { code: '820001', cstCode: '820', name: 'Regime específico — serviços financeiros', description: '' },
+    { code: '830001', cstCode: '830', name: 'Exclusão da BC — energia elétrica', description: '' },
+  ];
+  for (const item of seedClasses) {
+    await prisma.fiscalCClassTrib.upsert({
+      where: { storeId_code: { storeId: STORE_ID, code: item.code } },
+      update: {},
+      create: { storeId: STORE_ID, ...item, active: true },
+    });
+  }
+
+  await prisma.fiscalTaxTablesMeta.upsert({
+    where: { storeId: STORE_ID },
+    update: {},
+    create: {
+      storeId: STORE_ID,
+      lastSyncSource: FiscalTaxSyncSource.seed,
+      lastSyncMessage:
+        'Tabelas iniciais (seed). Sincronize com a API SVRS quando o certificado estiver no Nest.',
     },
   });
 
