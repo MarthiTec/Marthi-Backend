@@ -23,6 +23,9 @@ import { StoreModule } from './modules/store/store.module';
 import { MeModule } from './modules/me/me.module';
 import { RegistryModule } from './modules/registry/registry.module';
 import { TotemModule } from './modules/totem/totem.module';
+import { FinanceBookModule } from './modules/finance-book/finance-book.module';
+import { WarehousesModule } from './modules/warehouses/warehouses.module';
+import { StockInvoicesModule } from './modules/stock-invoices/stock-invoices.module';
 
 @Module({
   imports: [
@@ -50,6 +53,9 @@ import { TotemModule } from './modules/totem/totem.module';
     MeModule,
     RegistryModule,
     TotemModule,
+    FinanceBookModule,
+    WarehousesModule,
+    StockInvoicesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

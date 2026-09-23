@@ -153,6 +153,41 @@ Leads do totem e tickets da fila passam a ser o Nest (`https://marthi-backend.di
 
 Seed P0: `EMP-ADMIN` (`teste@marthi.com.br`, todas as áreas), `EMP-ANA`, `VEN-BRUNO`, `FOR-CELSUL`.
 
+## Fase 3 P1 — Livro financeiro + almoxarifado + notas de estoque
+
+Domínio separado de `GET/POST /finance` (extrato de caixa lógico). Saldo de conta é **derivado** (`initialBalance` + tesouraria ± baixas).
+
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| `GET/POST` | `/api/v1/bank-accounts` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/bank-accounts/:id` | Bearer (DELETE = `active=false`) |
+| `GET/POST` | `/api/v1/payables` | Bearer (`status?`, `from?`, `to?`) |
+| `GET/PATCH` | `/api/v1/payables/:id` | Bearer |
+| `POST` | `/api/v1/payables/:id/pay` | Bearer `{ amount, accountId?, at? }` |
+| `GET/POST` | `/api/v1/receivables` | Bearer |
+| `GET/PATCH` | `/api/v1/receivables/:id` | Bearer |
+| `POST` | `/api/v1/receivables/:id/receive` | Bearer |
+| `GET/POST` | `/api/v1/treasury` | Bearer |
+| `GET/POST` | `/api/v1/advances` | Bearer |
+| `POST` | `/api/v1/advances/:id/apply` · `/refund` | Bearer |
+| `GET/POST` | `/api/v1/warehouses` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/warehouses/:id` | Bearer |
+| `GET/POST` | `/api/v1/lots` | Bearer (`stockId?`) |
+| `PATCH` | `/api/v1/lots/:id` | Bearer `{ qty }` |
+| `GET/POST` | `/api/v1/kits` | Bearer |
+| `GET/PATCH/DELETE` | `/api/v1/kits/:id` | Bearer |
+| `GET/POST` | `/api/v1/warehouse-moves` | Bearer (POST ajusta estoque/lote) |
+| `GET/POST` | `/api/v1/stock-invoices` | Bearer (`kind?`, `status?`) |
+| `GET/PATCH` | `/api/v1/stock-invoices/:id` | Bearer (PATCH só `draft`) |
+| `POST` | `/api/v1/stock-invoices/:id/lines` | Bearer |
+| `DELETE` | `/api/v1/stock-invoices/:id/lines/:lineId` | Bearer |
+| `POST` | `/api/v1/stock-invoices/:id/post` | Bearer (entrada `qty+=`, saída `qty-=`) |
+| `POST` | `/api/v1/stock-invoices/:id/cancel` | Bearer (estorna se `posted`) |
+
+`POST /stock` e `PATCH /stock/:id` validam `warehouseId` se informado.
+
+Seed P1: almoxarifados `ALX-01` (Loja) e `ALX-BANC` (Bancada OS); contas `ACC-CAIXA` (Caixa loja) e `ACC-OPER` (Conta operacional).
+
 ## Scripts
 
 | Script | Uso |
@@ -169,7 +204,6 @@ Seed P0: `EMP-ADMIN` (`teste@marthi.com.br`, todas as áreas), `EMP-ANA`, `VEN-B
 
 ## Próximos módulos
 
-- P1: livro financeiro, almoxarifado/lotes/kits, notas de estoque
 - P2: caixa, cadastro fiscal
 - P3: CRM / e-commerce stubs
 - P4: auditoria / analytics totem

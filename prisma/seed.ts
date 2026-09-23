@@ -11,6 +11,7 @@ import {
   StockKind,
   TotemMode,
   AccessArea,
+  BankAccountType,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -649,6 +650,85 @@ async function main() {
       email: 'compras@celsul.local',
       city: 'Rio de Janeiro',
       notes: 'Peças e aparelhos',
+      active: true,
+    },
+  });
+
+  await prisma.warehouse.upsert({
+    where: { id: 'ALX-01' },
+    update: { name: 'Loja', code: 'ALX-01', address: 'Loja · depósito', active: true },
+    create: {
+      id: 'ALX-01',
+      storeId: STORE_ID,
+      name: 'Loja',
+      code: 'ALX-01',
+      address: 'Loja · depósito',
+      active: true,
+    },
+  });
+
+  await prisma.warehouse.upsert({
+    where: { id: 'ALX-BANC' },
+    update: {
+      name: 'Bancada OS',
+      code: 'ALX-BANC',
+      address: 'Área técnica',
+      active: true,
+    },
+    create: {
+      id: 'ALX-BANC',
+      storeId: STORE_ID,
+      name: 'Bancada OS',
+      code: 'ALX-BANC',
+      address: 'Área técnica',
+      active: true,
+    },
+  });
+
+  await prisma.bankAccount.upsert({
+    where: { id: 'ACC-CAIXA' },
+    update: {
+      name: 'Caixa loja',
+      bank: 'Espécie',
+      agency: '—',
+      number: 'CAIXA-01',
+      type: BankAccountType.cash,
+      initialBalance: 800,
+      active: true,
+    },
+    create: {
+      id: 'ACC-CAIXA',
+      storeId: STORE_ID,
+      name: 'Caixa loja',
+      bank: 'Espécie',
+      agency: '—',
+      number: 'CAIXA-01',
+      type: BankAccountType.cash,
+      initialBalance: 800,
+      active: true,
+    },
+  });
+
+  await prisma.bankAccount.upsert({
+    where: { id: 'ACC-OPER' },
+    update: {
+      name: 'Conta operacional',
+      bank: 'Banco Exemplo',
+      agency: '0001',
+      number: '12345-6',
+      type: BankAccountType.checking,
+      initialBalance: 12500,
+      active: true,
+    },
+    create: {
+      id: 'ACC-OPER',
+      storeId: STORE_ID,
+      name: 'Conta operacional',
+      bank: 'Banco Exemplo',
+      agency: '0001',
+      number: '12345-6',
+      type: BankAccountType.checking,
+      initialBalance: 12500,
       active: true,
     },
   });

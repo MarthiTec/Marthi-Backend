@@ -8,7 +8,7 @@ import {
   StockKind,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { conflict, notFound } from '../../common/errors/http';
+import { conflict, notFound, validation } from '../../common/errors/http';
 import { prefixedId } from '../../common/utils/ids';
 import { money } from '../../common/utils/money';
 import { optionalText } from '../../common/utils/phone';
@@ -137,6 +137,7 @@ export class StockService {
   }
 
   async create(storeId: string, dto: CreateStockDto) {
+    await this.assertWarehouse(storeId, dto.warehouseId);
     const row = await this.prisma.$transaction(async (tx) => {
       const created = await tx.stockItem.create({
         data: {
@@ -174,6 +175,9 @@ export class StockService {
 
   async update(storeId: string, id: string, dto: UpdateStockDto) {
     await this.findOwned(storeId, id);
+    if (dto.warehouseId !== undefined) {
+      await this.assertWarehouse(storeId, dto.warehouseId);
+    }
     const row = await this.prisma.$transaction(async (tx) => {
       await tx.stockItem.update({
         where: { id },
@@ -234,6 +238,15 @@ export class StockService {
       throw error;
     }
     return { id, deleted: true };
+  }
+
+  private async assertWarehouse(storeId: string, warehouseId?: string | null) {
+    const id = emptyToNull(warehouseId);
+    if (!id) return;
+    const warehouse = await this.prisma.warehouse.findFirst({
+      where: { id, storeId },
+    });
+    if (!warehouse) throw validation('Almoxarifado inválido.');
   }
 
   private async findOwned(storeId: string, id: string) {
