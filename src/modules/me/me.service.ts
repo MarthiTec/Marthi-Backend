@@ -5,6 +5,26 @@ import { validation } from '../../common/errors/http';
 import { AuthUser } from '../auth/types/auth.types';
 import { UpdateOperatorProfileDto } from './dto/profile.dto';
 
+function toProfileJson(row: {
+  displayName: string;
+  role: string;
+  photo: string | null;
+  email: string;
+  phone: string;
+  address: string;
+  theme: string;
+}, loginEmail: string) {
+  return {
+    displayName: row.displayName,
+    role: row.role,
+    photo: row.photo,
+    email: row.email.trim() || loginEmail,
+    phone: row.phone,
+    address: row.address,
+    theme: row.theme === 'dark' ? 'dark' : 'light',
+  };
+}
+
 @Injectable()
 export class MeService {
   constructor(private readonly prisma: PrismaService) {}
@@ -18,13 +38,13 @@ export class MeService {
         displayName: user.name,
         role: 'Operador',
         photo: null,
+        email: user.email ?? '',
+        phone: '',
+        address: '',
+        theme: 'light',
       },
     });
-    return {
-      displayName: row.displayName,
-      role: row.role,
-      photo: row.photo,
-    };
+    return toProfileJson(row, user.email ?? '');
   }
 
   async updateProfile(user: AuthUser, dto: UpdateOperatorProfileDto) {
@@ -38,12 +58,12 @@ export class MeService {
         displayName: dto.displayName?.trim() || current.displayName,
         role: dto.role?.trim() || current.role,
         photo: dto.photo === undefined ? current.photo : dto.photo,
+        email: dto.email !== undefined ? dto.email.trim() : current.email,
+        phone: dto.phone !== undefined ? dto.phone.trim() : current.phone,
+        address: dto.address !== undefined ? dto.address.trim() : current.address,
+        theme: dto.theme ?? current.theme,
       },
     });
-    return {
-      displayName: row.displayName,
-      role: row.role,
-      photo: row.photo,
-    };
+    return toProfileJson(row, user.email ?? '');
   }
 }

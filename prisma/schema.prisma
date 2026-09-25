@@ -305,6 +305,10 @@ model OperatorProfile {
   displayName String @map("display_name")
   role        String @default("Operador")
   photo       String?
+  email       String @default("")
+  phone       String @default("")
+  address     String @default("")
+  theme       String @default("light")
 
   @@map("operator_profiles")
 }
@@ -379,11 +383,27 @@ model StoreEntitlement {
 }
 
 model TotemSettings {
-  storeId            String    @id @map("store_id")
-  store              Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  mode               TotemMode @default(kiosk)
-  exitPassword       String    @default("cellponto") @map("exit_password")
-  shareStockWithErp  Boolean   @default(false) @map("share_stock_with_erp")
+  storeId               String    @id @map("store_id")
+  store                 Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  mode                  TotemMode @default(kiosk)
+  exitPassword          String    @default("cellponto") @map("exit_password")
+  shareStockWithErp     Boolean   @default(true) @map("share_stock_with_erp")
+  vertical              String    @default("general")
+  columns               Int       @default(2)
+  showAttractScreen     Boolean   @default(true) @map("show_attract_screen")
+  storeName             String    @default("Sua Loja") @map("store_name")
+  storeLogo             String?   @map("store_logo")
+  attractBackground     String?   @map("attract_background")
+  attractGradientColor  String    @default("#0f766e") @map("attract_gradient_color")
+  attractLayout         String    @default("standard") @map("attract_layout")
+  keyboardPlacement     String    @default("bottom") @map("keyboard_placement")
+  askCustomerName       Boolean   @default(false) @map("ask_customer_name")
+  offerFulfillment      Boolean   @default(false) @map("offer_fulfillment")
+  printTicket           Boolean   @default(false) @map("print_ticket")
+  audioAssist           Boolean   @default(false) @map("audio_assist")
+  storeWhatsApp         String    @default("") @map("store_whatsapp")
+  notifyCustomerOnLead  Boolean   @default(false) @map("notify_customer_on_lead")
+  locationLabel         String    @default("") @map("location_label")
 
   @@map("totem_settings")
 }
