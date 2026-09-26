@@ -6,7 +6,6 @@ import {
   PaymentType,
   PlanId,
   PrismaClient,
-  ProductStatus,
   StockCondition,
   StockKind,
   TotemMode,
@@ -25,90 +24,8 @@ const prisma = new PrismaClient();
 
 const STORE_ID = 'STR-CELL-PONTO';
 
-type TotemProductSeed = {
-  id: string;
-  name: string;
-  brand: 'apple' | 'xiaomi';
-  storages: string[];
-  colors: string[];
-  cashPrice: number;
-  slug: string;
-};
-
-const TOTEM_PRODUCTS: TotemProductSeed[] = [
-  {
-    id: '1',
-    name: 'iPhone 16 Pro Max',
-    brand: 'apple',
-    storages: ['256 GB', '512 GB'],
-    colors: ['Desert', 'Preto', 'Branco', 'Natural'],
-    cashPrice: 6990,
-    slug: 'iphone-16-pro-max',
-  },
-  {
-    id: '2',
-    name: 'iPhone 16 Pro',
-    brand: 'apple',
-    storages: ['128 GB', '256 GB'],
-    colors: ['Preto', 'Branco', 'Desert'],
-    cashPrice: 6290,
-    slug: 'iphone-16-pro',
-  },
-  {
-    id: '3',
-    name: 'iPhone 15',
-    brand: 'apple',
-    storages: ['128 GB', '256 GB'],
-    colors: ['Preto', 'Azul', 'Rosa'],
-    cashPrice: 4499,
-    slug: 'iphone-15',
-  },
-  {
-    id: '4',
-    name: 'iPhone 14',
-    brand: 'apple',
-    storages: ['128 GB', '256 GB'],
-    colors: ['Preto', 'Azul', 'Roxo'],
-    cashPrice: 3899,
-    slug: 'iphone-14',
-  },
-  {
-    id: '5',
-    name: 'iPhone 13',
-    brand: 'apple',
-    storages: ['128 GB', '256 GB'],
-    colors: ['Preto', 'Branco', 'Azul'],
-    cashPrice: 3400,
-    slug: 'iphone-13',
-  },
-  {
-    id: '6',
-    name: 'iPhone 12',
-    brand: 'apple',
-    storages: ['64 GB', '128 GB'],
-    colors: ['Preto', 'Branco', 'Azul'],
-    cashPrice: 2799,
-    slug: 'iphone-12',
-  },
-  {
-    id: '7',
-    name: 'iPhone 11',
-    brand: 'apple',
-    storages: ['64 GB', '128 GB'],
-    colors: ['Preto', 'Branco', 'Vermelho'],
-    cashPrice: 2299,
-    slug: 'iphone-11',
-  },
-  {
-    id: '19',
-    name: 'Redmi Note 13 Pro',
-    brand: 'xiaomi',
-    storages: ['256 GB', '512 GB'],
-    colors: ['Preto', 'Verde', 'Roxo'],
-    cashPrice: 2199,
-    slug: 'redmi-note-13-pro',
-  },
-];
+/** Catálogo falso de vitrine. O seed apaga se ainda existir no banco. */
+const DEMO_TOTEM_PRODUCT_IDS = ['1', '2', '3', '4', '5', '6', '7', '19'];
 
 function slugValue(prefix: string, value: string) {
   return `${prefix}-${value
@@ -175,12 +92,12 @@ async function main() {
 
   await prisma.totemSettings.upsert({
     where: { storeId: STORE_ID },
-    update: { mode: TotemMode.kiosk, exitPassword: 'cellponto' },
+    update: { mode: TotemMode.kiosk, exitPassword: 'cellponto', shareStockWithErp: true },
     create: {
       storeId: STORE_ID,
       mode: TotemMode.kiosk,
       exitPassword: 'cellponto',
-      shareStockWithErp: false,
+      shareStockWithErp: true,
     },
   });
 
@@ -321,66 +238,23 @@ async function main() {
   });
   await prisma.productAttributeValue.upsert({
     where: { id: 'ATTR-RET-ENCOMENDA' },
-    update: {},
+    update: { priceDelta: 0 },
     create: {
       id: 'ATTR-RET-ENCOMENDA',
       attributeId: pickupAttr.id,
       value: 'Por encomenda',
-      priceDelta: 250,
+      priceDelta: 0,
       sort: 1,
     },
   });
 
-  const brands = await prisma.brand.findMany();
-  const brandBySlug = Object.fromEntries(
-    brands.map((brand) => [brand.slug, brand.id]),
-  );
-
-  for (const [index, item] of TOTEM_PRODUCTS.entries()) {
-    await prisma.product.upsert({
-      where: { id: item.id },
-      update: {
-        name: item.name,
-        cashPrice: item.cashPrice,
-        brandId: brandBySlug[item.brand],
-        status: ProductStatus.active,
-        sort: index,
-      },
-      create: {
-        id: item.id,
-        storeId: STORE_ID,
-        brandId: brandBySlug[item.brand],
-        name: item.name,
-        status: ProductStatus.active,
-        cashPrice: item.cashPrice,
-        sort: index,
-      },
-    });
-
-    await prisma.productImage.deleteMany({ where: { productId: item.id } });
-    await prisma.productImage.createMany({
-      data: [1, 2].map((sort) => ({
-        id: `IMG-${item.id}-${sort}`,
-        productId: item.id,
-        url: `/totem/${item.slug}/${sort}.svg`,
-        sort,
-      })),
-    });
-
-    const valueIds = [
-      ...item.colors.map((color) => slugValue('ATTR-COR', color)),
-      ...item.storages.map((storage) => slugValue('ATTR-CAP', storage)),
-      'ATTR-RET-PRONTA',
-      'ATTR-RET-ENCOMENDA',
-    ];
-
-    await prisma.productAllowedValue.deleteMany({
-      where: { productId: item.id },
-    });
-    await prisma.productAllowedValue.createMany({
-      data: valueIds.map((valueId) => ({ productId: item.id, valueId })),
-    });
-  }
+  await prisma.stockItem.updateMany({
+    where: { productId: { in: DEMO_TOTEM_PRODUCT_IDS } },
+    data: { productId: null },
+  });
+  await prisma.product.deleteMany({
+    where: { id: { in: DEMO_TOTEM_PRODUCT_IDS } },
+  });
 
   await prisma.priceTable.upsert({
     where: { id: 'TAB-VISTA' },
@@ -540,27 +414,7 @@ async function main() {
       condition: StockCondition.new,
     },
   });
-  await prisma.stockItem.upsert({
-    where: { id: 'STK-DEMO-APARELHO' },
-    update: { qty: 2, cost: 1200, price: 1899 },
-    create: {
-      id: 'STK-DEMO-APARELHO',
-      storeId: STORE_ID,
-      name: 'iPhone 12 128 GB',
-      sku: 'DEV-IP12-128',
-      barcode: '789100000003',
-      imei: '356938035643809',
-      qty: 2,
-      minQty: 0,
-      cost: 1200,
-      price: 1899,
-      kind: StockKind.device,
-      condition: StockCondition.used,
-      color: 'Preto',
-      capacity: '128 GB',
-      showOnTotem: false,
-    },
-  });
+  await prisma.stockItem.deleteMany({ where: { id: 'STK-DEMO-APARELHO' } });
 
   const allAreas: AccessArea[] = [
     AccessArea.totem,

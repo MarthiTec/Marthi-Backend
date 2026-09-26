@@ -14,6 +14,32 @@ export class TotemController {
   constructor(private readonly totem: TotemService) {}
 
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('catalog')
+  @ApiOperation({
+    summary: 'Catálogo do totem (público) — estoque com showOnTotem',
+  })
+  catalog() {
+    return this.totem.listCatalog();
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('settings')
+  @ApiOperation({ summary: 'Configuração do totem (público, loja seed)' })
+  settings() {
+    return this.totem.getPublicSettings();
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Get('attributes')
+  @ApiOperation({ summary: 'Atributos do totem (público, loja seed)' })
+  attributes() {
+    return this.totem.listPublicAttributes();
+  }
+
+  @Public()
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('leads')
   @ApiOperation({ summary: 'Lead do totem → fila PDV (público)' })

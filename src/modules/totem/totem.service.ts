@@ -3,12 +3,19 @@ import { TicketSource, TicketStatus, TotemClickEvent } from '@prisma/client';
 import { DEMO_STORE_ID, prefixedId } from '../../common/utils/ids';
 import { isoRequired } from '../../common/utils/money';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AttributesService } from '../attributes/attributes.service';
+import { toStockJson } from '../stock/stock.service';
+import { StoreService } from '../store/store.service';
 import { TotemClickDto } from './dto/totem-click.dto';
 import { TotemLeadDto } from './dto/totem-lead.dto';
 
 @Injectable()
 export class TotemService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly store: StoreService,
+    private readonly attributes: AttributesService,
+  ) {}
 
   async createLead(dto: TotemLeadDto) {
     const ticket = await this.prisma.posTicket.create({
@@ -61,6 +68,37 @@ export class TotemService {
       });
     }
     return toClickJson(click);
+  }
+
+  /** Catálogo público do totem = estoque com showOnTotem (loja seed). */
+  async listCatalog() {
+    const rows = await this.prisma.stockItem.findMany({
+      where: {
+        storeId: DEMO_STORE_ID,
+        showOnTotem: true,
+        qty: { gte: 0 },
+        kind: { not: 'supply' },
+      },
+      include: {
+        attributes: true,
+        images: { orderBy: { sort: 'asc' } },
+      },
+      orderBy: { name: 'asc' },
+    });
+    return rows.map(toStockJson);
+  }
+
+  /** Settings públicos do totem (kiosk sem JWT). */
+  async getPublicSettings() {
+    return this.store.getTotemSettings(DEMO_STORE_ID);
+  }
+
+  /** Atributos públicos usados no totem (filtros/cards). */
+  async listPublicAttributes() {
+    const all = await this.attributes.list(DEMO_STORE_ID);
+    return all.filter(
+      (item) => item.active && (item.useOnTotem || item.filterOnTotem),
+    );
   }
 
   async summary(storeId: string) {
