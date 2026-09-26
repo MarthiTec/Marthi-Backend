@@ -182,6 +182,22 @@ export class ProductsService {
     };
   }
 
+  async remove(storeId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: String(productId), storeId },
+    });
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado');
+    }
+
+    await this.prisma.stockItem.updateMany({
+      where: { productId: product.id },
+      data: { productId: null },
+    });
+    await this.prisma.product.delete({ where: { id: product.id } });
+    return { id: asPublicId(product.id), deleted: true };
+  }
+
   private async requireProduct(productId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: String(productId) },

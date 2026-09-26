@@ -6,8 +6,6 @@ import {
   PaymentType,
   PlanId,
   PrismaClient,
-  StockCondition,
-  StockKind,
   TotemMode,
   AccessArea,
   BankAccountType,
@@ -378,43 +376,11 @@ async function main() {
     },
   });
 
-  await prisma.stockItem.upsert({
-    where: { id: 'STK-TELA' },
-    update: { qty: 5, cost: 280, price: 450 },
-    create: {
-      id: 'STK-TELA',
-      storeId: STORE_ID,
-      name: 'Tela iPhone 13',
-      sku: 'PEC-TELA-13',
-      barcode: '789100000001',
-      qty: 5,
-      minQty: 1,
-      cost: 280,
-      price: 450,
-      kind: StockKind.part,
-      condition: StockCondition.new,
-      color: 'Preto',
-      capacity: '',
+  await prisma.stockItem.deleteMany({
+    where: {
+      id: { in: ['STK-TELA', 'STK-BATERIA', 'STK-DEMO-APARELHO'] },
     },
   });
-  await prisma.stockItem.upsert({
-    where: { id: 'STK-BATERIA' },
-    update: { qty: 8, cost: 90, price: 180 },
-    create: {
-      id: 'STK-BATERIA',
-      storeId: STORE_ID,
-      name: 'Bateria iPhone 12',
-      sku: 'PEC-BAT-12',
-      barcode: '789100000002',
-      qty: 8,
-      minQty: 2,
-      cost: 90,
-      price: 180,
-      kind: StockKind.part,
-      condition: StockCondition.new,
-    },
-  });
-  await prisma.stockItem.deleteMany({ where: { id: 'STK-DEMO-APARELHO' } });
 
   const allAreas: AccessArea[] = [
     AccessArea.totem,

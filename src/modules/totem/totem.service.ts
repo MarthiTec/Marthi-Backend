@@ -78,6 +78,8 @@ export class TotemService {
         showOnTotem: true,
         qty: { gte: 0 },
         kind: { not: 'supply' },
+        id: { notIn: [...DEMO_STOCK_IDS] },
+        sku: { notIn: [...DEMO_STOCK_SKUS] },
       },
       include: {
         attributes: true,
@@ -174,6 +176,50 @@ export class TotemService {
     };
   }
 }
+
+const DEMO_STOCK_IDS = [
+  'STK-16PM',
+  'STK-16PM-512',
+  'STK-16P',
+  'STK-16P-256',
+  'STK-15',
+  'STK-15-256',
+  'STK-14-128',
+  'STK-14-256',
+  'STK-13-128',
+  'STK-13-256',
+  'STK-12-64',
+  'STK-12-128',
+  'STK-11-64',
+  'STK-11-128',
+  'STK-RN13',
+  'STK-RN13-512',
+  'STK-DEMO-APARELHO',
+  'STK-TELA',
+  'STK-BATERIA',
+] as const;
+
+const DEMO_STOCK_SKUS = [
+  'APL-16PM-256',
+  'APL-16PM-512',
+  'APL-16P-128',
+  'APL-16P-256',
+  'APL-15-128',
+  'APL-15-256',
+  'APL-14-128',
+  'APL-14-256',
+  'APL-13-128',
+  'APL-13-256',
+  'APL-12-64',
+  'APL-12-128',
+  'APL-11-64',
+  'APL-11-128',
+  'XIA-RN13-256',
+  'XIA-RN13-512',
+  'PEC-TELA-13',
+  'PEC-BAT-12',
+  'DEV-IP12-128',
+] as const;
 
 const CLICK_CAP = 2000;
 const TICKET_LOOKBACK = 2000;
