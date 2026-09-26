@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { setupDbTunnel } from './common/utils/db-tunnel';
 
 process.stderr.write(`[marthi] node starting ${process.version}\n`);
 
@@ -71,6 +72,8 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
   }
+
+  setupDbTunnel(app.getHttpServer());
 
   const port = Number(process.env.PORT || config.get('PORT') || 8080);
   await app.listen(port, '0.0.0.0');
