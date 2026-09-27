@@ -112,7 +112,12 @@ export class StockInvoicesService {
     }
     const supplierId =
       dto.supplierId !== undefined
-        ? await this.resolveSupplier(storeId, current.kind, dto.supplierId, false)
+        ? await this.resolveSupplier(
+            storeId,
+            current.kind,
+            dto.supplierId,
+            false,
+          )
         : undefined;
     const row = await this.prisma.stockInvoice.update({
       where: { id },
@@ -238,7 +243,9 @@ export class StockInvoicesService {
     updateCost: boolean,
   ) {
     for (const line of lines) {
-      const stock = await tx.stockItem.findFirst({ where: { id: line.stockId } });
+      const stock = await tx.stockItem.findFirst({
+        where: { id: line.stockId },
+      });
       if (!stock) throw validation('Item de estoque não encontrado.');
       const nextQty = stock.qty + direction * line.qty;
       if (nextQty < 0) {

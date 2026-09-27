@@ -74,7 +74,8 @@ export class UpdateIssuerSettingsDto {
   certificateBase64?: string;
 
   @ApiPropertyOptional({
-    description: 'Aceito no PUT; gravado criptografado. Nunca devolvido no GET.',
+    description:
+      'Aceito no PUT; gravado criptografado. Nunca devolvido no GET.',
   })
   @IsOptional()
   @IsString()

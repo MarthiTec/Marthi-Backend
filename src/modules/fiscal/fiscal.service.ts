@@ -25,7 +25,8 @@ import {
 const LOG_CAP = 400;
 const CCLASSTRIB_PORTAL_URL =
   'https://dfe-portal.svrs.rs.gov.br/Cff/ClassificacaoTributaria';
-const CCLASSTRIB_API_URL = 'https://cff.svrs.rs.gov.br/api/v1/consultas/classTrib';
+const CCLASSTRIB_API_URL =
+  'https://cff.svrs.rs.gov.br/api/v1/consultas/classTrib';
 
 function toIssuerJson(row: FiscalIssuerSettings) {
   return {
@@ -155,7 +156,10 @@ export class FiscalService {
       ['CBS', dto.cbsRateBase ?? money(current.cbsRateBase)],
       ['IBS', dto.ibsRateBase ?? money(current.ibsRateBase)],
       ['ISSQN', dto.issqnRateDefault ?? money(current.issqnRateDefault)],
-      ['ISSQN retido', dto.issqnRetainedRate ?? money(current.issqnRetainedRate)],
+      [
+        'ISSQN retido',
+        dto.issqnRetainedRate ?? money(current.issqnRetainedRate),
+      ],
     ];
     for (const [label, value] of rates) {
       if (Number.isNaN(value) || value < 0 || value > 100) {
@@ -163,9 +167,12 @@ export class FiscalService {
       }
     }
 
-    let storageMode = dto.storageMode ?? current.storageMode;
+    const storageMode = dto.storageMode ?? current.storageMode;
     let cloudEnabled = dto.cloudEnabled ?? current.cloudEnabled;
-    if (storageMode === FiscalStorageMode.cloud || storageMode === FiscalStorageMode.both) {
+    if (
+      storageMode === FiscalStorageMode.cloud ||
+      storageMode === FiscalStorageMode.both
+    ) {
       cloudEnabled = true;
     }
     if (storageMode === FiscalStorageMode.local) cloudEnabled = false;
@@ -174,7 +181,8 @@ export class FiscalService {
         ? optionalText(dto.localRootPath)
         : current.localRootPath;
     if (
-      (storageMode === FiscalStorageMode.local || storageMode === FiscalStorageMode.both) &&
+      (storageMode === FiscalStorageMode.local ||
+        storageMode === FiscalStorageMode.both) &&
       !localRootPath
     ) {
       throw validation('Informe a pasta base na máquina (XML / LOG / PDF).');
@@ -214,20 +222,30 @@ export class FiscalService {
         certificatePasswordEnc,
         ...(dto.cscId !== undefined ? { cscId } : {}),
         cscTokenEnc,
-        ...(dto.environment !== undefined ? { environment: dto.environment } : {}),
-        ...(dto.nfeSeries !== undefined ? { nfeSeries: optionalText(dto.nfeSeries) || '1' } : {}),
+        ...(dto.environment !== undefined
+          ? { environment: dto.environment }
+          : {}),
+        ...(dto.nfeSeries !== undefined
+          ? { nfeSeries: optionalText(dto.nfeSeries) || '1' }
+          : {}),
         ...(dto.nfceSeries !== undefined
           ? { nfceSeries: optionalText(dto.nfceSeries) || '1' }
           : {}),
         ...(dto.nfseSeries !== undefined
           ? { nfseSeries: optionalText(dto.nfseSeries) || '1' }
           : {}),
-        ...(dto.cteSeries !== undefined ? { cteSeries: optionalText(dto.cteSeries) || '1' } : {}),
+        ...(dto.cteSeries !== undefined
+          ? { cteSeries: optionalText(dto.cteSeries) || '1' }
+          : {}),
         ...(dto.mdfeSeries !== undefined
           ? { mdfeSeries: optionalText(dto.mdfeSeries) || '1' }
           : {}),
-        ...(dto.cbsRateBase !== undefined ? { cbsRateBase: dto.cbsRateBase } : {}),
-        ...(dto.ibsRateBase !== undefined ? { ibsRateBase: dto.ibsRateBase } : {}),
+        ...(dto.cbsRateBase !== undefined
+          ? { cbsRateBase: dto.cbsRateBase }
+          : {}),
+        ...(dto.ibsRateBase !== undefined
+          ? { ibsRateBase: dto.ibsRateBase }
+          : {}),
         ...(dto.issqnRateDefault !== undefined
           ? { issqnRateDefault: dto.issqnRateDefault }
           : {}),
@@ -328,7 +346,9 @@ export class FiscalService {
       }
       if (dto.cClassTribs.length) {
         await tx.fiscalCClassTrib.createMany({
-          data: dto.cClassTribs.map((item) => this.normalizeClass(storeId, item)),
+          data: dto.cClassTribs.map((item) =>
+            this.normalizeClass(storeId, item),
+          ),
         });
       }
       await tx.fiscalTaxTablesMeta.update({
@@ -465,13 +485,20 @@ export class FiscalService {
   }
 }
 
-function mapApiPayload(raw: unknown): { csts: TaxCstDto[]; cClassTribs: TaxCClassDto[] } {
+function mapApiPayload(raw: unknown): {
+  csts: TaxCstDto[];
+  cClassTribs: TaxCClassDto[];
+} {
   const rows = Array.isArray(raw)
     ? raw
-    : raw && typeof raw === 'object' && Array.isArray((raw as { data?: unknown }).data)
-      ? ((raw as { data: unknown[] }).data)
-      : raw && typeof raw === 'object' && Array.isArray((raw as { itens?: unknown }).itens)
-        ? ((raw as { itens: unknown[] }).itens)
+    : raw &&
+        typeof raw === 'object' &&
+        Array.isArray((raw as { data?: unknown }).data)
+      ? (raw as { data: unknown[] }).data
+      : raw &&
+          typeof raw === 'object' &&
+          Array.isArray((raw as { itens?: unknown }).itens)
+        ? (raw as { itens: unknown[] }).itens
         : [];
   const cstMap = new Map<string, TaxCstDto>();
   const classes: TaxCClassDto[] = [];
@@ -485,11 +512,23 @@ function mapApiPayload(raw: unknown): { csts: TaxCstDto[]; cClassTribs: TaxCClas
       .replace(/\D/g, '')
       .padStart(3, '0');
     const name = String(
-      item.nomeCClassTrib ?? item.nome ?? item.name ?? item.descricao ?? item.description ?? cClass,
+      item.nomeCClassTrib ??
+        item.nome ??
+        item.name ??
+        item.descricao ??
+        item.description ??
+        cClass,
     );
-    const cstName = String(item.nomeCst ?? item.NomeCst ?? item.cstNome ?? `CST ${cst}`);
+    const cstName = String(
+      item.nomeCst ?? item.NomeCst ?? item.cstNome ?? `CST ${cst}`,
+    );
     if (cst.length === 3 && !cstMap.has(cst)) {
-      cstMap.set(cst, { code: cst, name: cstName, description: '', active: true });
+      cstMap.set(cst, {
+        code: cst,
+        name: cstName,
+        description: '',
+        active: true,
+      });
     }
     if (cClass.length >= 6) {
       classes.push({

@@ -51,7 +51,10 @@ export class WorkOrdersService {
     const where: Prisma.WorkOrderWhereInput = { storeId };
     if (query.status) where.status = query.status;
     if (query.technician?.trim()) {
-      where.technician = { contains: query.technician.trim(), mode: 'insensitive' };
+      where.technician = {
+        contains: query.technician.trim(),
+        mode: 'insensitive',
+      };
     }
     const needle = query.q?.trim();
     if (needle) {
@@ -78,7 +81,7 @@ export class WorkOrdersService {
   }
 
   async create(storeId: string, dto: CreateWorkOrderDto) {
-    let customerId = dto.customerId ?? null;
+    const customerId = dto.customerId ?? null;
     if (customerId) {
       const customer = await this.prisma.customer.findFirst({
         where: { id: customerId, storeId },
@@ -128,14 +131,21 @@ export class WorkOrdersService {
 
   async update(storeId: string, id: string, dto: UpdateWorkOrderDto) {
     const current = await this.findOwned(storeId, id);
-    if (dto.status === OsStatus.delivered || dto.status === OsStatus.cancelled) {
+    if (
+      dto.status === OsStatus.delivered ||
+      dto.status === OsStatus.cancelled
+    ) {
       throw validation('Use POST /deliver ou POST /cancel para encerrar a OS.');
     }
     if (dto.assetDisposition === AssetDisposition.purchased) {
-      throw conflict('Use POST /work-orders/:id/purchase para marcar como comprado.');
+      throw conflict(
+        'Use POST /work-orders/:id/purchase para marcar como comprado.',
+      );
     }
     if (current.purchaseStockId && dto.assetDisposition) {
-      throw conflict('Já existe compra registrada — não dá para mudar o destino.');
+      throw conflict(
+        'Já existe compra registrada — não dá para mudar o destino.',
+      );
     }
 
     const now = new Date();
@@ -174,7 +184,9 @@ export class WorkOrdersService {
         ...(dto.customerEmail !== undefined
           ? { customerEmail: dto.customerEmail }
           : {}),
-        ...(dto.itemName !== undefined ? { itemName: dto.itemName.trim() } : {}),
+        ...(dto.itemName !== undefined
+          ? { itemName: dto.itemName.trim() }
+          : {}),
         ...(dto.itemBrand !== undefined ? { itemBrand: dto.itemBrand } : {}),
         ...(dto.itemModel !== undefined ? { itemModel: dto.itemModel } : {}),
         ...(dto.itemColor !== undefined ? { itemColor: dto.itemColor } : {}),
@@ -182,7 +194,9 @@ export class WorkOrdersService {
         ...(dto.devicePassword !== undefined
           ? { devicePassword: dto.devicePassword }
           : {}),
-        ...(dto.accessories !== undefined ? { accessories: dto.accessories } : {}),
+        ...(dto.accessories !== undefined
+          ? { accessories: dto.accessories }
+          : {}),
         ...(dto.conditionOnEntry !== undefined
           ? { conditionOnEntry: dto.conditionOnEntry }
           : {}),
@@ -195,7 +209,10 @@ export class WorkOrdersService {
   async consumePart(storeId: string, osId: string, dto: ConsumePartDto) {
     const updated = await this.prisma.$transaction(async (tx) => {
       const order = await this.loadTx(tx, storeId, osId);
-      if (order.status === OsStatus.cancelled || order.status === OsStatus.delivered) {
+      if (
+        order.status === OsStatus.cancelled ||
+        order.status === OsStatus.delivered
+      ) {
         throw conflict('OS encerrada — não dá para baixar peças.');
       }
       const stock = await tx.stockItem.findFirst({
@@ -255,7 +272,9 @@ export class WorkOrdersService {
       const line = order.lines.find((item) => item.id === lineId);
       if (!line) throw notFound('Linha não encontrada.');
       if (line.kind !== OsLineKind.part || !line.stockId) {
-        throw conflict('Só linhas de peça com estoque podem ser estornadas assim.');
+        throw conflict(
+          'Só linhas de peça com estoque podem ser estornadas assim.',
+        );
       }
 
       await tx.stockItem.update({
@@ -285,7 +304,10 @@ export class WorkOrdersService {
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await this.loadTx(tx, storeId, osId);
       if (order.status === OsStatus.cancelled) throw conflict('OS cancelada.');
-      if (order.assetDisposition === AssetDisposition.purchased && order.purchaseStockId) {
+      if (
+        order.assetDisposition === AssetDisposition.purchased &&
+        order.purchaseStockId
+      ) {
         throw conflict('Equipamento já comprado para estoque nesta OS.');
       }
 
@@ -356,7 +378,8 @@ export class WorkOrdersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const order = await this.loadTx(tx, storeId, osId);
       if (order.status === OsStatus.cancelled) throw conflict('OS cancelada.');
-      if (order.status === OsStatus.delivered) throw conflict('OS já entregue.');
+      if (order.status === OsStatus.delivered)
+        throw conflict('OS já entregue.');
 
       const revenue = workOrderRevenue(order);
       let revenueFinanceId = order.revenueFinanceId;
@@ -392,11 +415,15 @@ export class WorkOrdersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const order = await this.loadTx(tx, storeId, osId);
       if (order.status === OsStatus.delivered) {
-        throw conflict('OS entregue — cancele via estorno manual se necessário.');
+        throw conflict(
+          'OS entregue — cancele via estorno manual se necessário.',
+        );
       }
       if (order.status === OsStatus.cancelled) return order;
       if (order.revenueFinanceId) {
-        throw conflict('Há receita lançada — estorne manualmente antes de cancelar.');
+        throw conflict(
+          'Há receita lançada — estorne manualmente antes de cancelar.',
+        );
       }
 
       for (const line of order.lines) {
@@ -491,7 +518,10 @@ export class WorkOrdersService {
 
   async removePhoto(storeId: string, osId: string, photoId: string) {
     const order = await this.findOwned(storeId, osId);
-    if (order.status === OsStatus.delivered || order.status === OsStatus.cancelled) {
+    if (
+      order.status === OsStatus.delivered ||
+      order.status === OsStatus.cancelled
+    ) {
       throw conflict('OS encerrada — não dá para remover fotos.');
     }
     const photo = order.photos.find((item) => item.id === photoId);
@@ -507,7 +537,10 @@ export class WorkOrdersService {
     dto: PatchChecklistDto,
   ) {
     const order = await this.findOwned(storeId, osId);
-    if (order.status === OsStatus.delivered || order.status === OsStatus.cancelled) {
+    if (
+      order.status === OsStatus.delivered ||
+      order.status === OsStatus.cancelled
+    ) {
       throw conflict('OS encerrada — checklist bloqueado.');
     }
     const item = order.checklistItems.find((row) => row.id === itemId);
@@ -541,7 +574,10 @@ export class WorkOrdersService {
 
   async clearSignature(storeId: string, osId: string) {
     const order = await this.findOwned(storeId, osId);
-    if (order.status === OsStatus.delivered || order.status === OsStatus.cancelled) {
+    if (
+      order.status === OsStatus.delivered ||
+      order.status === OsStatus.cancelled
+    ) {
       throw conflict('OS encerrada — assinatura bloqueada.');
     }
     await this.prisma.workOrder.update({
@@ -559,7 +595,9 @@ export class WorkOrdersService {
     const order = await this.findOwned(storeId, osId);
     this.assertOpenQuote(order);
     if (order.quoteStatus === QuoteStatus.approved) {
-      throw conflict('Orçamento já aprovado. Crie revisão nas observações se precisar.');
+      throw conflict(
+        'Orçamento já aprovado. Crie revisão nas observações se precisar.',
+      );
     }
     await this.prisma.workOrder.update({
       where: { id: osId },
@@ -579,7 +617,9 @@ export class WorkOrdersService {
     this.assertOpenQuote(order);
     const total = workOrderRevenue(order);
     if (total <= 0 && !order.quoteNotes.trim()) {
-      throw validation('Informe valores ou descrição do orçamento antes de enviar.');
+      throw validation(
+        'Informe valores ou descrição do orçamento antes de enviar.',
+      );
     }
     const waiting =
       order.status === OsStatus.open || order.status === OsStatus.diagnosis
@@ -657,7 +697,10 @@ export class WorkOrdersService {
   }
 
   private assertOpenQuote(order: WorkOrderFull) {
-    if (order.status === OsStatus.delivered || order.status === OsStatus.cancelled) {
+    if (
+      order.status === OsStatus.delivered ||
+      order.status === OsStatus.cancelled
+    ) {
       throw conflict('OS encerrada — não dá para alterar orçamento.');
     }
   }

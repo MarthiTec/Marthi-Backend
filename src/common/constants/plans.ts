@@ -8,14 +8,20 @@ export const GOLDEN_MODULES: ModuleId[] = [
   ModuleId.ecommerce,
 ];
 
-export function clampModulesForPlan(plan: PlanId, modules: ModuleId[]): ModuleId[] {
+export function clampModulesForPlan(
+  plan: PlanId,
+  modules: ModuleId[],
+): ModuleId[] {
   const unique = [...new Set(modules)];
   if (plan === PlanId.golden) return [...GOLDEN_MODULES];
   if (plan === PlanId.bronze) return unique.slice(0, 1);
   return unique.slice(0, 2);
 }
 
-export function assertModulesForPlan(plan: PlanId, modules: ModuleId[]): boolean {
+export function assertModulesForPlan(
+  plan: PlanId,
+  modules: ModuleId[],
+): boolean {
   const unique = [...new Set(modules)];
   if (unique.length !== modules.length) return false;
   if (plan === PlanId.bronze) return unique.length === 1;

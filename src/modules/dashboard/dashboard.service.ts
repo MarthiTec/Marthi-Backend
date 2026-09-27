@@ -134,7 +134,8 @@ export class DashboardService {
     }
 
     const inPeriod = (createdAt: Date) =>
-      createdAt.getTime() >= from.getTime() && createdAt.getTime() <= to.getTime();
+      createdAt.getTime() >= from.getTime() &&
+      createdAt.getTime() <= to.getTime();
 
     const revenuePeriod = finance
       .filter((item) => item.type === 'in' && inPeriod(item.createdAt))
@@ -143,14 +144,18 @@ export class DashboardService {
       .filter((item) => item.type === 'out' && inPeriod(item.createdAt))
       .reduce((sum, item) => sum + money(item.amount), 0);
     const cashBalance = finance.reduce(
-      (sum, item) => sum + (item.type === 'in' ? money(item.amount) : -money(item.amount)),
+      (sum, item) =>
+        sum + (item.type === 'in' ? money(item.amount) : -money(item.amount)),
       0,
     );
 
     const bySource = new Map<string, number>();
     for (const item of finance) {
       if (item.type !== 'in' || !inPeriod(item.createdAt)) continue;
-      bySource.set(item.source, (bySource.get(item.source) ?? 0) + money(item.amount));
+      bySource.set(
+        item.source,
+        (bySource.get(item.source) ?? 0) + money(item.amount),
+      );
     }
     const toneBySource: Record<string, string> = {
       pos: '#0f766e',
@@ -177,18 +182,31 @@ export class DashboardService {
       .slice(0, 5);
 
     const technicians = this.buildTechnicianRanks(workOrders);
-    const deliveredCount = technicians.reduce((sum, row) => sum + row.closedCount, 0);
+    const deliveredCount = technicians.reduce(
+      (sum, row) => sum + row.closedCount,
+      0,
+    );
     const returnCount = technicians.reduce((sum, row) => sum + row.returns, 0);
-    const openOs = workOrders.filter((item) => OPEN_OS.includes(item.status)).length;
+    const openOs = workOrders.filter((item) =>
+      OPEN_OS.includes(item.status),
+    ).length;
 
-    const payablesOpen = openPayables.reduce((sum, row) => sum + money(row.amount), 0);
-    const receivablesOpen = openReceivables.reduce((sum, row) => sum + money(row.amount), 0);
+    const payablesOpen = openPayables.reduce(
+      (sum, row) => sum + money(row.amount),
+      0,
+    );
+    const receivablesOpen = openReceivables.reduce(
+      (sum, row) => sum + money(row.amount),
+      0,
+    );
     const advancesOpen = openAdvances.reduce(
-      (sum, row) => sum + Math.max(0, money(row.amount) - money(row.usedAmount)),
+      (sum, row) =>
+        sum + Math.max(0, money(row.amount) - money(row.usedAmount)),
       0,
     );
     const treasury =
-      bankAccounts.reduce((sum, row) => sum + money(row.initialBalance), 0) + cashBalance;
+      bankAccounts.reduce((sum, row) => sum + money(row.initialBalance), 0) +
+      cashBalance;
 
     return {
       cashBalance,
@@ -216,8 +234,9 @@ export class DashboardService {
       topReturns:
         [...technicians]
           .filter((row) => row.returns > 0)
-          .sort((a, b) => b.returns - a.returns || b.closedCount - a.closedCount)[0] ??
-        null,
+          .sort(
+            (a, b) => b.returns - a.returns || b.closedCount - a.closedCount,
+          )[0] ?? null,
       deliveredCount,
       returnRate: deliveredCount > 0 ? returnCount / deliveredCount : 0,
       openPosTickets,
@@ -283,7 +302,9 @@ export class DashboardService {
         const priorDelivered = list
           .slice(0, i)
           .reverse()
-          .find((item) => item.status === 'delivered' || Boolean(item.deliveredAt));
+          .find(
+            (item) => item.status === 'delivered' || Boolean(item.deliveredAt),
+          );
         if (!priorDelivered) continue;
         ensure(techName(priorDelivered.technician)).returns += 1;
       }

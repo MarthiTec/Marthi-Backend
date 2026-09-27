@@ -1,4 +1,9 @@
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from 'crypto';
 
 const SALT = 'marthi-fiscal-vault';
 
@@ -15,7 +20,10 @@ export function encryptSecret(plain: string): string {
   if (!text) return '';
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', secretKey(), iv);
-  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(text, 'utf8'),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
   return `v1:${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
 }
@@ -31,7 +39,9 @@ export function decryptSecret(payload: string): string {
     const data = Buffer.from(parts[3], 'base64');
     const decipher = createDecipheriv('aes-256-gcm', secretKey(), iv);
     decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+      'utf8',
+    );
   } catch {
     return '';
   }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth.types';
@@ -102,7 +102,10 @@ export class CashController {
 
   @Post('credits')
   @ApiOperation({ summary: 'Emitir vale-compra' })
-  createCredit(@CurrentUser() user: AuthUser, @Body() dto: CreateStoreCreditDto) {
+  createCredit(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateStoreCreditDto,
+  ) {
     return this.cash.createCredit(user.storeId, dto, user.name);
   }
 
@@ -124,7 +127,24 @@ export class CashController {
 
   @Post('exchanges')
   @ApiOperation({ summary: 'Registrar troca (caixa ou vale)' })
-  createExchange(@CurrentUser() user: AuthUser, @Body() dto: CreateExchangeDto) {
+  createExchange(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateExchangeDto,
+  ) {
     return this.cash.createExchange(user.storeId, dto, user.name);
+  }
+
+  @Get('settings')
+  @ApiOperation({
+    summary: 'Obter configurações de terminais e balança do PDV',
+  })
+  getSettings(@CurrentUser() user: AuthUser) {
+    return this.cash.getSettings(user.storeId);
+  }
+
+  @Put('settings')
+  @ApiOperation({ summary: 'Atualizar configurações de terminais e balança' })
+  putSettings(@CurrentUser() user: AuthUser, @Body() body: any) {
+    return this.cash.putSettings(user.storeId, body);
   }
 }

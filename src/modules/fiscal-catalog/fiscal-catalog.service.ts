@@ -86,7 +86,10 @@ export class FiscalCatalogService {
     return toClassJson(await this.findClassification(storeId, id));
   }
 
-  async createClassification(storeId: string, dto: CreateFiscalClassificationDto) {
+  async createClassification(
+    storeId: string,
+    dto: CreateFiscalClassificationDto,
+  ) {
     if (dto.defaultCfopId) await this.assertCfop(storeId, dto.defaultCfopId);
     const row = await this.prisma.fiscalClassification.create({
       data: {
@@ -125,14 +128,24 @@ export class FiscalCatalogService {
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.ncm !== undefined ? { ncm: dto.ncm.trim() } : {}),
-        ...(dto.cstIcms !== undefined ? { cstIcms: optionalText(dto.cstIcms) } : {}),
-        ...(dto.cClasTrib !== undefined ? { cClasTrib: optionalText(dto.cClasTrib) } : {}),
+        ...(dto.cstIcms !== undefined
+          ? { cstIcms: optionalText(dto.cstIcms) }
+          : {}),
+        ...(dto.cClasTrib !== undefined
+          ? { cClasTrib: optionalText(dto.cClasTrib) }
+          : {}),
         ...(dto.icmsRate !== undefined ? { icmsRate: dto.icmsRate } : {}),
-        ...(dto.ipiCst !== undefined ? { ipiCst: optionalText(dto.ipiCst) } : {}),
+        ...(dto.ipiCst !== undefined
+          ? { ipiCst: optionalText(dto.ipiCst) }
+          : {}),
         ...(dto.ipiRate !== undefined ? { ipiRate: dto.ipiRate } : {}),
-        ...(dto.pisCst !== undefined ? { pisCst: optionalText(dto.pisCst) } : {}),
+        ...(dto.pisCst !== undefined
+          ? { pisCst: optionalText(dto.pisCst) }
+          : {}),
         ...(dto.pisRate !== undefined ? { pisRate: dto.pisRate } : {}),
-        ...(dto.cofinsCst !== undefined ? { cofinsCst: optionalText(dto.cofinsCst) } : {}),
+        ...(dto.cofinsCst !== undefined
+          ? { cofinsCst: optionalText(dto.cofinsCst) }
+          : {}),
         ...(dto.cofinsRate !== undefined ? { cofinsRate: dto.cofinsRate } : {}),
         ...(dto.ibsRate !== undefined ? { ibsRate: dto.ibsRate } : {}),
         ...(dto.cbsRate !== undefined ? { cbsRate: dto.cbsRate } : {}),
@@ -277,23 +290,33 @@ export class FiscalCatalogService {
   }
 
   private async findCfop(storeId: string, id: string) {
-    const row = await this.prisma.cfopCode.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.cfopCode.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('CFOP não encontrado.');
     return row;
   }
 
   private async findFecp(storeId: string, id: string) {
-    const row = await this.prisma.fecpRule.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.fecpRule.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('FECP não encontrado.');
     return row;
   }
 
   private async assertCfop(storeId: string, id: string) {
-    const row = await this.prisma.cfopCode.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.cfopCode.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw validation('CFOP padrão inválido.');
   }
 
-  private async assertUniqueCfop(storeId: string, code: string, exceptId?: string) {
+  private async assertUniqueCfop(
+    storeId: string,
+    code: string,
+    exceptId?: string,
+  ) {
     const existing = await this.prisma.cfopCode.findFirst({
       where: { storeId, code, ...(exceptId ? { NOT: { id: exceptId } } : {}) },
     });

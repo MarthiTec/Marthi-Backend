@@ -29,10 +29,7 @@ export class MeController {
 
   @Put('profile')
   @ApiOperation({ summary: 'Atualizar perfil do operador' })
-  update(
-    @CurrentUser() user: AuthUser,
-    @Body() dto: UpdateOperatorProfileDto,
-  ) {
+  update(@CurrentUser() user: AuthUser, @Body() dto: UpdateOperatorProfileDto) {
     return this.me.updateProfile(user, dto);
   }
 }

@@ -28,13 +28,17 @@ export function partsTotalFromLines(lines: WorkOrderLine[]) {
 
 export function workOrderRevenue(order: WorkOrderFull) {
   const hasParts = order.lines.some((line) => line.kind === OsLineKind.part);
-  const parts = hasParts ? partsTotalFromLines(order.lines) : money(order.parts);
+  const parts = hasParts
+    ? partsTotalFromLines(order.lines)
+    : money(order.parts);
   return money(order.labor) + parts;
 }
 
 export function toWorkOrderJson(order: WorkOrderFull) {
   const hasParts = order.lines.some((line) => line.kind === OsLineKind.part);
-  const parts = hasParts ? partsTotalFromLines(order.lines) : money(order.parts);
+  const parts = hasParts
+    ? partsTotalFromLines(order.lines)
+    : money(order.parts);
   return {
     id: order.id,
     customerId: order.customerId,

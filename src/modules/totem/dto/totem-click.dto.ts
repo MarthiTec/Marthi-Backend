@@ -3,7 +3,9 @@ import { Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class TotemClickDto {
-  @ApiProperty({ description: 'ID do produto (string ou número do catálogo totem)' })
+  @ApiProperty({
+    description: 'ID do produto (string ou número do catálogo totem)',
+  })
   @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
   @MinLength(1)

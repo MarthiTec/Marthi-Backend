@@ -177,8 +177,7 @@ export class CrmService {
     const owner = dto.ownerSellerId
       ? await this.requireSeller(storeId, dto.ownerSellerId)
       : null;
-    const stage =
-      dto.stage ?? (owner ? CrmStage.attending : CrmStage.leads);
+    const stage = dto.stage ?? (owner ? CrmStage.attending : CrmStage.leads);
     const row = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.crmLead.create({
         data: {
@@ -230,15 +229,27 @@ export class CrmService {
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
-        ...(dto.email !== undefined ? { email: optionalText(dto.email).toLowerCase() } : {}),
-        ...(dto.whatsapp !== undefined ? { whatsapp: digitsOnly(dto.whatsapp) } : {}),
-        ...(dto.interest !== undefined ? { interest: optionalText(dto.interest) } : {}),
+        ...(dto.email !== undefined
+          ? { email: optionalText(dto.email).toLowerCase() }
+          : {}),
+        ...(dto.whatsapp !== undefined
+          ? { whatsapp: digitsOnly(dto.whatsapp) }
+          : {}),
+        ...(dto.interest !== undefined
+          ? { interest: optionalText(dto.interest) }
+          : {}),
         ...(dto.value !== undefined ? { value: roundMoney(dto.value) } : {}),
         ...(dto.notes !== undefined ? { notes: optionalText(dto.notes) } : {}),
-        ...(dto.graduation !== undefined ? { graduation: optionalText(dto.graduation) } : {}),
+        ...(dto.graduation !== undefined
+          ? { graduation: optionalText(dto.graduation) }
+          : {}),
         ...(dto.polo !== undefined ? { polo: optionalText(dto.polo) } : {}),
-        ...(dto.sourceInfo !== undefined ? { sourceInfo: optionalText(dto.sourceInfo) } : {}),
-        ...(dto.hideContact !== undefined ? { hideContact: dto.hideContact } : {}),
+        ...(dto.sourceInfo !== undefined
+          ? { sourceInfo: optionalText(dto.sourceInfo) }
+          : {}),
+        ...(dto.hideContact !== undefined
+          ? { hideContact: dto.hideContact }
+          : {}),
       },
     });
     return toLeadJson(row);
@@ -253,7 +264,8 @@ export class CrmService {
       );
     }
     const claimedAt = lead.claimedAt ?? new Date();
-    const nextStage = lead.stage === CrmStage.leads ? CrmStage.attending : lead.stage;
+    const nextStage =
+      lead.stage === CrmStage.leads ? CrmStage.attending : lead.stage;
     const row = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.crmLead.update({
         where: { id: lead.id },
@@ -322,7 +334,8 @@ export class CrmService {
       await this.pushActivity(tx, {
         leadId: lead.id,
         kind: CrmActivityKind.system,
-        title: dto.stage === CrmStage.won ? 'Negócio fechado' : 'Etapa alterada',
+        title:
+          dto.stage === CrmStage.won ? 'Negócio fechado' : 'Etapa alterada',
         body:
           dto.stage === CrmStage.won
             ? 'Negócio fechado. Continua como lead até confirmar o pagamento e virar cliente Marthi.'
@@ -346,7 +359,11 @@ export class CrmService {
     return rows.map(toActivityJson);
   }
 
-  async addActivity(storeId: string, leadId: string, dto: CreateCrmActivityDto) {
+  async addActivity(
+    storeId: string,
+    leadId: string,
+    dto: CreateCrmActivityDto,
+  ) {
     const lead = await this.findLead(storeId, leadId);
     const seller = await this.requireSeller(storeId, dto.sellerId);
     if (!lead.ownerSellerId) {
@@ -386,28 +403,33 @@ export class CrmService {
     return rows.map(toMessageJson);
   }
 
-  async sendLeadMessage(storeId: string, leadId: string, dto: CreateCrmLeadMessageDto) {
+  async sendLeadMessage(
+    storeId: string,
+    leadId: string,
+    dto: CreateCrmLeadMessageDto,
+  ) {
     const text = optionalText(dto.text) || optionalText(dto.body);
     if (!text) throw validation('Digite a mensagem.');
     const lead = await this.findLead(storeId, leadId);
     const seller = await this.requireSeller(storeId, dto.sellerId);
     return this.prisma.$transaction(async (tx) => {
       let ownerId = lead.ownerSellerId;
-      let ownerName = lead.ownerName;
       if (!dto.asLead && !ownerId) {
         ownerId = seller.id;
-        ownerName = seller.name;
         await tx.crmLead.update({
           where: { id: lead.id },
           data: {
             ownerSellerId: seller.id,
             ownerName: seller.name,
             claimedAt: lead.claimedAt ?? new Date(),
-            stage: lead.stage === CrmStage.leads ? CrmStage.attending : lead.stage,
+            stage:
+              lead.stage === CrmStage.leads ? CrmStage.attending : lead.stage,
           },
         });
       } else if (!dto.asLead && ownerId !== seller.id) {
-        throw conflict(`Este lead é de ${lead.ownerName}. Só ele pode conversar.`);
+        throw conflict(
+          `Este lead é de ${lead.ownerName}. Só ele pode conversar.`,
+        );
       }
       const message = await tx.crmMessage.create({
         data: {
@@ -433,7 +455,11 @@ export class CrmService {
     });
   }
 
-  async listSellerMessages(storeId: string, sellerA?: string, sellerB?: string) {
+  async listSellerMessages(
+    storeId: string,
+    sellerA?: string,
+    sellerB?: string,
+  ) {
     if (!sellerA || !sellerB) throw validation('Informe o par de vendedores.');
     const key = sellerPairKey(sellerA, sellerB);
     const rows = await this.prisma.crmMessage.findMany({
@@ -489,7 +515,11 @@ export class CrmService {
     };
   }
 
-  async putProfile(storeId: string, sellerId: string, dto: UpdateCrmProfileDto) {
+  async putProfile(
+    storeId: string,
+    sellerId: string,
+    dto: UpdateCrmProfileDto,
+  ) {
     const seller = await this.requireSeller(storeId, sellerId);
     const displayName = dto.displayName.trim();
     const handle = slugHandle(dto.handle ?? displayName);
@@ -520,17 +550,31 @@ export class CrmService {
         displayName,
         handle,
         ...(dto.bio !== undefined ? { bio: optionalText(dto.bio) } : {}),
-        ...(dto.avatarUrl !== undefined ? { avatarUrl: optionalText(dto.avatarUrl) } : {}),
-        ...(dto.coverUrl !== undefined ? { coverUrl: optionalText(dto.coverUrl) } : {}),
+        ...(dto.avatarUrl !== undefined
+          ? { avatarUrl: optionalText(dto.avatarUrl) }
+          : {}),
+        ...(dto.coverUrl !== undefined
+          ? { coverUrl: optionalText(dto.coverUrl) }
+          : {}),
         ...(dto.city !== undefined ? { city: optionalText(dto.city) } : {}),
         ...(dto.specialty !== undefined
           ? { specialty: optionalText(dto.specialty) || 'Comercial' }
           : {}),
-        ...(dto.whatsapp !== undefined ? { whatsapp: optionalText(dto.whatsapp) } : {}),
-        ...(dto.instagram !== undefined ? { instagram: optionalText(dto.instagram) } : {}),
-        ...(dto.linkedin !== undefined ? { linkedin: optionalText(dto.linkedin) } : {}),
-        ...(dto.website !== undefined ? { website: optionalText(dto.website) } : {}),
-        ...(dto.publicProfile !== undefined ? { publicProfile: dto.publicProfile } : {}),
+        ...(dto.whatsapp !== undefined
+          ? { whatsapp: optionalText(dto.whatsapp) }
+          : {}),
+        ...(dto.instagram !== undefined
+          ? { instagram: optionalText(dto.instagram) }
+          : {}),
+        ...(dto.linkedin !== undefined
+          ? { linkedin: optionalText(dto.linkedin) }
+          : {}),
+        ...(dto.website !== undefined
+          ? { website: optionalText(dto.website) }
+          : {}),
+        ...(dto.publicProfile !== undefined
+          ? { publicProfile: dto.publicProfile }
+          : {}),
       },
     });
     return toProfileJson(row);
@@ -543,7 +587,9 @@ export class CrmService {
   }
 
   private async requireSeller(storeId: string, id: string) {
-    const seller = await this.prisma.seller.findFirst({ where: { id, storeId } });
+    const seller = await this.prisma.seller.findFirst({
+      where: { id, storeId },
+    });
     if (!seller) throw validation('Vendedor inválido.');
     return seller;
   }

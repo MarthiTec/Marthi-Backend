@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AuditKind,
   Prisma,
+  StockBalanceAudit,
+  StockBalanceStatus,
   StockCondition,
   StockItem,
   StockItemAttribute,
@@ -12,6 +15,12 @@ import { conflict, notFound, validation } from '../../common/errors/http';
 import { prefixedId } from '../../common/utils/ids';
 import { money } from '../../common/utils/money';
 import { optionalText } from '../../common/utils/phone';
+import { AuthUser } from '../auth/types/auth.types';
+import {
+  ApplyStockBalanceDto,
+  CreateStockBalanceDto,
+  UpdateStockBalanceItemsDto,
+} from './dto/stock-balance.dto';
 import { CreateStockDto, UpdateStockDto } from './dto/stock.dto';
 
 const ATTR_COR = 'ATTR-COR';
@@ -54,6 +63,25 @@ export function toStockJson(row: StockRow) {
   };
 }
 
+export function toBalanceJson(row: StockBalanceAudit) {
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title,
+    status: row.status,
+    warehouseId: row.warehouseId ?? undefined,
+    responsibleUser: row.responsibleUser,
+    startedAt: row.startedAt.toISOString(),
+    completedAt: row.completedAt ? row.completedAt.toISOString() : undefined,
+    summary: (row.summary as Record<string, unknown>) ?? {},
+    duplicateRule: row.duplicateRule,
+    notes: row.notes,
+    items: row.items,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
 const stockInclude = {
   attributes: true,
   images: { orderBy: { sort: 'asc' as const } },
@@ -92,8 +120,7 @@ export class StockService {
       orderBy: { name: 'asc' },
     });
 
-    const low =
-      query.low === true || query.low === 'true' || query.low === '1';
+    const low = query.low === true || query.low === 'true' || query.low === '1';
     const filtered = low
       ? rows.filter((item) => item.qty <= item.minQty)
       : rows;
@@ -127,9 +154,12 @@ export class StockService {
     });
     if (named.length === 1) return toStockJson(named[0]);
     if (named.length === 0) throw notFound('Item de estoque não encontrado.');
-    throw conflict('Mais de um item corresponde ao nome. Use SKU, código ou ID.', {
-      count: named.length,
-    });
+    throw conflict(
+      'Mais de um item corresponde ao nome. Use SKU, código ou ID.',
+      {
+        count: named.length,
+      },
+    );
   }
 
   async get(storeId: string, id: string) {
@@ -180,7 +210,10 @@ export class StockService {
       await this.assertWarehouse(storeId, dto.warehouseId);
     }
     if (dto.fiscalClassificationId !== undefined) {
-      await this.assertFiscalClassification(storeId, dto.fiscalClassificationId);
+      await this.assertFiscalClassification(
+        storeId,
+        dto.fiscalClassificationId,
+      );
     }
     const row = await this.prisma.$transaction(async (tx) => {
       await tx.stockItem.update({
@@ -193,7 +226,9 @@ export class StockService {
             ? { barcode: optionalText(dto.barcode) }
             : {}),
           ...(dto.imei !== undefined ? { imei: optionalText(dto.imei) } : {}),
-          ...(dto.color !== undefined ? { color: optionalText(dto.color) } : {}),
+          ...(dto.color !== undefined
+            ? { color: optionalText(dto.color) }
+            : {}),
           ...(dto.capacity !== undefined
             ? { capacity: optionalText(dto.capacity) }
             : {}),
@@ -209,7 +244,9 @@ export class StockService {
             ? { supplierId: emptyToNull(dto.supplierId) }
             : {}),
           ...(dto.fiscalClassificationId !== undefined
-            ? { fiscalClassificationId: emptyToNull(dto.fiscalClassificationId) }
+            ? {
+                fiscalClassificationId: emptyToNull(dto.fiscalClassificationId),
+              }
             : {}),
           ...(dto.warehouseId !== undefined
             ? { warehouseId: emptyToNull(dto.warehouseId) }
@@ -237,7 +274,9 @@ export class StockService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        throw conflict('Item vinculado a pedido ou OS — não pode ser removido.');
+        throw conflict(
+          'Item vinculado a pedido ou OS — não pode ser removido.',
+        );
       }
       throw error;
     }
@@ -318,6 +357,164 @@ export class StockService {
         sort,
       })),
     });
+  }
+
+  async listBalances(storeId: string) {
+    const rows = await this.prisma.stockBalanceAudit.findMany({
+      where: { storeId },
+      orderBy: { startedAt: 'desc' },
+    });
+    return rows.map(toBalanceJson);
+  }
+
+  async getActiveBalance(storeId: string) {
+    const row = await this.prisma.stockBalanceAudit.findFirst({
+      where: { storeId, status: StockBalanceStatus.in_progress },
+      orderBy: { startedAt: 'desc' },
+    });
+    return row ? toBalanceJson(row) : null;
+  }
+
+  async getBalance(storeId: string, id: string) {
+    const row = await this.prisma.stockBalanceAudit.findFirst({
+      where: { id, storeId },
+    });
+    if (!row) throw notFound('Inventário de estoque não encontrado.');
+    return toBalanceJson(row);
+  }
+
+  async createBalance(
+    storeId: string,
+    dto: CreateStockBalanceDto,
+    user: AuthUser,
+  ) {
+    const count = await this.prisma.stockBalanceAudit.count({
+      where: { storeId },
+    });
+    const code = `BAL-${String(count + 1).padStart(4, '0')}`;
+    const title = dto.title?.trim() || `Inventário Geral ${code}`;
+    const responsibleUser =
+      dto.responsibleUser?.trim() || user.name || 'Operador';
+
+    const row = await this.prisma.stockBalanceAudit.create({
+      data: {
+        id: prefixedId('BAL'),
+        storeId,
+        code,
+        title,
+        status: StockBalanceStatus.in_progress,
+        warehouseId: dto.warehouseId ?? null,
+        responsibleUser,
+        duplicateRule: dto.duplicateRule ?? 'sum',
+        notes: dto.notes?.trim() || '',
+        items: {},
+        summary: {},
+      },
+    });
+
+    return toBalanceJson(row);
+  }
+
+  async updateBalanceItems(
+    storeId: string,
+    id: string,
+    dto: UpdateStockBalanceItemsDto,
+  ) {
+    const current = await this.prisma.stockBalanceAudit.findFirst({
+      where: { id, storeId },
+    });
+    if (!current) throw notFound('Inventário de estoque não encontrado.');
+    if (current.status !== StockBalanceStatus.in_progress) {
+      throw conflict('Este balanço já foi finalizado ou cancelado.');
+    }
+
+    const row = await this.prisma.stockBalanceAudit.update({
+      where: { id },
+      data: {
+        items: dto.items ?? current.items,
+        summary: dto.summary ?? current.summary,
+      },
+    });
+
+    return toBalanceJson(row);
+  }
+
+  async applyBalance(
+    storeId: string,
+    id: string,
+    dto: ApplyStockBalanceDto,
+    user: AuthUser,
+  ) {
+    const balance = await this.prisma.stockBalanceAudit.findFirst({
+      where: { id, storeId },
+    });
+    if (!balance) throw notFound('Inventário de estoque não encontrado.');
+    if (balance.status !== StockBalanceStatus.in_progress) {
+      throw conflict('Este balanço já foi finalizado ou cancelado.');
+    }
+
+    const items = (balance.items as Record<string, any>) || {};
+
+    return this.prisma.$transaction(async (tx) => {
+      for (const item of Object.values(items)) {
+        if (
+          item &&
+          item.stockId &&
+          item.countedQty !== null &&
+          item.countedQty !== undefined
+        ) {
+          const qty = Math.max(0, Math.round(Number(item.countedQty)));
+          await tx.stockItem.updateMany({
+            where: { id: item.stockId, storeId },
+            data: { qty },
+          });
+        }
+      }
+
+      const updated = await tx.stockBalanceAudit.update({
+        where: { id },
+        data: {
+          status: StockBalanceStatus.completed,
+          completedAt: new Date(),
+          notes: dto.notes?.trim() || balance.notes,
+        },
+      });
+
+      await tx.auditEntry.create({
+        data: {
+          id: prefixedId('AUD'),
+          storeId,
+          kind: AuditKind.action,
+          actorName: user.name || 'Operador',
+          actorEmail: user.email || '',
+          action: 'Balanço de estoque aplicado',
+          detail: `Balanço ${balance.code} (${balance.title}) finalizado com sucesso.`,
+          path: `/stock/balances/${id}/apply`,
+        },
+      });
+
+      return toBalanceJson(updated);
+    });
+  }
+
+  async cancelBalance(storeId: string, id: string) {
+    const balance = await this.prisma.stockBalanceAudit.findFirst({
+      where: { id, storeId },
+    });
+    if (!balance) throw notFound('Inventário de estoque não encontrado.');
+    if (balance.status !== StockBalanceStatus.in_progress) {
+      throw conflict('Este balanço já foi finalizado ou cancelado.');
+    }
+
+    const updated = await this.prisma.stockBalanceAudit.update({
+      where: { id },
+      data: {
+        status: StockBalanceStatus.cancelled,
+        completedAt: new Date(),
+      },
+    });
+
+    return toBalanceJson(updated);
   }
 }
 

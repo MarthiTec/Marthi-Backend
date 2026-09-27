@@ -7,10 +7,7 @@ import {
 } from '../../common/constants/plans';
 import { isImageDataUrl } from '../../common/constants/uploads';
 import { notFound, validation } from '../../common/errors/http';
-import {
-  UpdateStorePlanDto,
-  UpdateTotemSettingsDto,
-} from './dto/store.dto';
+import { UpdateStorePlanDto, UpdateTotemSettingsDto } from './dto/store.dto';
 
 function toTotemJson(row: TotemSettings) {
   return {
@@ -96,7 +93,8 @@ export class StoreService {
         columns: dto.columns ?? current.columns,
         showAttractScreen: dto.showAttractScreen ?? current.showAttractScreen,
         storeName: dto.storeName?.trim() || current.storeName,
-        storeLogo: dto.storeLogo === undefined ? current.storeLogo : dto.storeLogo,
+        storeLogo:
+          dto.storeLogo === undefined ? current.storeLogo : dto.storeLogo,
         attractBackground:
           dto.attractBackground === undefined
             ? current.attractBackground
@@ -122,5 +120,64 @@ export class StoreService {
       },
     });
     return toTotemJson(row);
+  }
+
+  async getCustomization(storeId: string) {
+    const row = await this.prisma.storeCustomization.findUnique({
+      where: { storeId },
+    });
+    return (
+      row ?? {
+        storeId,
+        segmentId: 'assistencia_tecnica',
+        showImei: true,
+        showDevicePassword: true,
+        showTablesAndKitchen: false,
+        showSizeColorGrid: false,
+      }
+    );
+  }
+
+  async updateCustomization(storeId: string, dto: any) {
+    return this.prisma.storeCustomization.upsert({
+      where: { storeId },
+      create: {
+        storeId,
+        segmentId: dto.segmentId ?? 'assistencia_tecnica',
+        showImei: dto.showImei ?? true,
+        showDevicePassword: dto.showDevicePassword ?? true,
+        showTablesAndKitchen: dto.showTablesAndKitchen ?? false,
+        showSizeColorGrid: dto.showSizeColorGrid ?? false,
+      },
+      update: {
+        ...(dto.segmentId !== undefined ? { segmentId: dto.segmentId } : {}),
+        ...(dto.showImei !== undefined ? { showImei: dto.showImei } : {}),
+        ...(dto.showDevicePassword !== undefined
+          ? { showDevicePassword: dto.showDevicePassword }
+          : {}),
+        ...(dto.showTablesAndKitchen !== undefined
+          ? { showTablesAndKitchen: dto.showTablesAndKitchen }
+          : {}),
+        ...(dto.showSizeColorGrid !== undefined
+          ? { showSizeColorGrid: dto.showSizeColorGrid }
+          : {}),
+      },
+    });
+  }
+
+  async getOperations(storeId: string) {
+    const row = await this.prisma.storeOperations.findUnique({
+      where: { storeId },
+    });
+    return (row?.shortcuts as any[]) ?? [];
+  }
+
+  async updateOperations(storeId: string, shortcuts: any) {
+    const row = await this.prisma.storeOperations.upsert({
+      where: { storeId },
+      create: { storeId, shortcuts: Array.isArray(shortcuts) ? shortcuts : [] },
+      update: { shortcuts: Array.isArray(shortcuts) ? shortcuts : [] },
+    });
+    return row.shortcuts;
   }
 }

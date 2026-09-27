@@ -90,7 +90,11 @@ async function main() {
 
   await prisma.totemSettings.upsert({
     where: { storeId: STORE_ID },
-    update: { mode: TotemMode.kiosk, exitPassword: 'cellponto', shareStockWithErp: true },
+    update: {
+      mode: TotemMode.kiosk,
+      exitPassword: 'cellponto',
+      shareStockWithErp: true,
+    },
     create: {
       storeId: STORE_ID,
       mode: TotemMode.kiosk,
@@ -337,7 +341,11 @@ async function main() {
 
   await prisma.customer.upsert({
     where: { id: 'CLI-ANA' },
-    update: { name: 'Ana Souza', phone: '11988880001', phoneDigits: '11988880001' },
+    update: {
+      name: 'Ana Souza',
+      phone: '11988880001',
+      phoneDigits: '11988880001',
+    },
     create: {
       id: 'CLI-ANA',
       storeId: STORE_ID,
@@ -357,7 +365,11 @@ async function main() {
   });
   await prisma.customer.upsert({
     where: { id: 'CLI-CARLOS' },
-    update: { name: 'Carlos Lima', phone: '11988880002', phoneDigits: '11988880002' },
+    update: {
+      name: 'Carlos Lima',
+      phone: '11988880002',
+      phoneDigits: '11988880002',
+    },
     create: {
       id: 'CLI-CARLOS',
       storeId: STORE_ID,
@@ -431,7 +443,11 @@ async function main() {
     update: {
       name: 'Ana Costa',
       role: EmployeeRole.operator,
-      accessAreas: [AccessArea.os, AccessArea.erp_stock, AccessArea.erp_customers],
+      accessAreas: [
+        AccessArea.os,
+        AccessArea.erp_stock,
+        AccessArea.erp_customers,
+      ],
     },
     create: {
       id: 'EMP-ANA',
@@ -443,7 +459,11 @@ async function main() {
       role: EmployeeRole.operator,
       isSystemUser: false,
       userEmail: '',
-      accessAreas: [AccessArea.os, AccessArea.erp_stock, AccessArea.erp_customers],
+      accessAreas: [
+        AccessArea.os,
+        AccessArea.erp_stock,
+        AccessArea.erp_customers,
+      ],
       active: true,
     },
   });
@@ -482,7 +502,12 @@ async function main() {
 
   await prisma.warehouse.upsert({
     where: { id: 'ALX-01' },
-    update: { name: 'Loja', code: 'ALX-01', address: 'Loja · depósito', active: true },
+    update: {
+      name: 'Loja',
+      code: 'ALX-01',
+      address: 'Loja · depósito',
+      active: true,
+    },
     create: {
       id: 'ALX-01',
       storeId: STORE_ID,
@@ -583,11 +608,31 @@ async function main() {
   });
 
   const seedCsts = [
-    { code: '000', name: 'Tributação integral', description: 'CST IBS/CBS — tributação integral' },
-    { code: '010', name: 'Tributação com alíquotas uniformes setoriais', description: '' },
-    { code: '011', name: 'Tributação com alíquotas uniformes setoriais reduzidas', description: '' },
-    { code: '200', name: 'Alíquota reduzida', description: 'Redução de alíquota IBS/CBS' },
-    { code: '220', name: 'Alíquota reduzida com redutor de base', description: '' },
+    {
+      code: '000',
+      name: 'Tributação integral',
+      description: 'CST IBS/CBS — tributação integral',
+    },
+    {
+      code: '010',
+      name: 'Tributação com alíquotas uniformes setoriais',
+      description: '',
+    },
+    {
+      code: '011',
+      name: 'Tributação com alíquotas uniformes setoriais reduzidas',
+      description: '',
+    },
+    {
+      code: '200',
+      name: 'Alíquota reduzida',
+      description: 'Redução de alíquota IBS/CBS',
+    },
+    {
+      code: '220',
+      name: 'Alíquota reduzida com redutor de base',
+      description: '',
+    },
     { code: '400', name: 'Isenção', description: '' },
     { code: '410', name: 'Imunidade e não incidência', description: '' },
     { code: '510', name: 'Diferimento', description: '' },
@@ -606,15 +651,60 @@ async function main() {
   }
 
   const seedClasses = [
-    { code: '000001', cstCode: '000', name: 'Situações tributadas integralmente pelo IBS e pela CBS', description: 'Classificação padrão' },
-    { code: '200001', cstCode: '200', name: 'Aquisições e importações com redução de alíquota', description: '' },
-    { code: '200002', cstCode: '200', name: 'Fornecimentos com redução de alíquota', description: '' },
-    { code: '200003', cstCode: '200', name: 'Redução de alíquota — cestas básicas', description: '' },
-    { code: '410001', cstCode: '410', name: 'Imunidade e não incidência', description: '' },
-    { code: '550001', cstCode: '550', name: 'Exportações de bens materiais', description: '' },
-    { code: '620001', cstCode: '620', name: 'Tributação monofásica sobre combustíveis', description: '' },
-    { code: '820001', cstCode: '820', name: 'Regime específico — serviços financeiros', description: '' },
-    { code: '830001', cstCode: '830', name: 'Exclusão da BC — energia elétrica', description: '' },
+    {
+      code: '000001',
+      cstCode: '000',
+      name: 'Situações tributadas integralmente pelo IBS e pela CBS',
+      description: 'Classificação padrão',
+    },
+    {
+      code: '200001',
+      cstCode: '200',
+      name: 'Aquisições e importações com redução de alíquota',
+      description: '',
+    },
+    {
+      code: '200002',
+      cstCode: '200',
+      name: 'Fornecimentos com redução de alíquota',
+      description: '',
+    },
+    {
+      code: '200003',
+      cstCode: '200',
+      name: 'Redução de alíquota — cestas básicas',
+      description: '',
+    },
+    {
+      code: '410001',
+      cstCode: '410',
+      name: 'Imunidade e não incidência',
+      description: '',
+    },
+    {
+      code: '550001',
+      cstCode: '550',
+      name: 'Exportações de bens materiais',
+      description: '',
+    },
+    {
+      code: '620001',
+      cstCode: '620',
+      name: 'Tributação monofásica sobre combustíveis',
+      description: '',
+    },
+    {
+      code: '820001',
+      cstCode: '820',
+      name: 'Regime específico — serviços financeiros',
+      description: '',
+    },
+    {
+      code: '830001',
+      cstCode: '830',
+      name: 'Exclusão da BC — energia elétrica',
+      description: '',
+    },
   ];
   for (const item of seedClasses) {
     await prisma.fiscalCClassTrib.upsert({

@@ -1,5 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { TicketStatus } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth.types';
@@ -23,6 +36,20 @@ export class OrdersController {
   @ApiOperation({ summary: 'Pedido com linhas' })
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.sales.getOrder(user.storeId, id);
+  }
+
+  @Post(':id/cancel')
+  @ApiOperation({ summary: 'Cancelar / estornar pedido de venda' })
+  cancel(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: { reason?: string },
+  ) {
+    return this.sales.cancelOrder(
+      user,
+      id,
+      dto?.reason ?? 'Cancelamento de venda',
+    );
   }
 }
 

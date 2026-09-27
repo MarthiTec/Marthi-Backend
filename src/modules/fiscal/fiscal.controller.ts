@@ -23,9 +23,13 @@ export class FiscalController {
 
   @Put('issuer-settings')
   @ApiOperation({
-    summary: 'Atualizar emissor. certificatePassword e cscToken são criptografados.',
+    summary:
+      'Atualizar emissor. certificatePassword e cscToken são criptografados.',
   })
-  putIssuer(@CurrentUser() user: AuthUser, @Body() dto: UpdateIssuerSettingsDto) {
+  putIssuer(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateIssuerSettingsDto,
+  ) {
     return this.fiscal.putIssuer(user.storeId, dto);
   }
 
@@ -49,13 +53,17 @@ export class FiscalController {
 
   @Put('tax-tables')
   @ApiOperation({ summary: 'Substituir tabelas CST / cClassTrib (manual)' })
-  putTaxTables(@CurrentUser() user: AuthUser, @Body() dto: ReplaceTaxTablesDto) {
+  putTaxTables(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ReplaceTaxTablesDto,
+  ) {
     return this.fiscal.putTaxTables(user.storeId, dto);
   }
 
   @Post('tax-tables/sync')
   @ApiOperation({
-    summary: 'Stub de sync SVRS (FISCAL_TAX_SYNC=true tenta a API; default off)',
+    summary:
+      'Stub de sync SVRS (FISCAL_TAX_SYNC=true tenta a API; default off)',
   })
   syncTaxTables(@CurrentUser() user: AuthUser) {
     return this.fiscal.syncTaxTables(user.storeId);

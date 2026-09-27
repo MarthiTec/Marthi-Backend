@@ -26,7 +26,9 @@ function parseBound(value: string | undefined, endOfDay: boolean) {
   if (!value?.trim()) return undefined;
   const raw = value.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return new Date(`${raw}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}-03:00`);
+    return new Date(
+      `${raw}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}-03:00`,
+    );
   }
   const parsed = new Date(raw);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;

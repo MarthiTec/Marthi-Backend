@@ -1,7 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { FinanceType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateFinanceDto {
   @ApiProperty({ enum: FinanceType })

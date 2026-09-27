@@ -184,8 +184,12 @@ export class FinanceBookService {
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.bank !== undefined ? { bank: optionalText(dto.bank) } : {}),
-        ...(dto.agency !== undefined ? { agency: optionalText(dto.agency) } : {}),
-        ...(dto.number !== undefined ? { number: optionalText(dto.number) } : {}),
+        ...(dto.agency !== undefined
+          ? { agency: optionalText(dto.agency) }
+          : {}),
+        ...(dto.number !== undefined
+          ? { number: optionalText(dto.number) }
+          : {}),
         ...(dto.type !== undefined ? { type: dto.type } : {}),
         ...(dto.initialBalance !== undefined
           ? { initialBalance: roundMoney(dto.initialBalance) }
@@ -255,7 +259,10 @@ export class FinanceBookService {
 
   async updatePayable(storeId: string, id: string, dto: UpdatePayableDto) {
     const current = await this.findPayable(storeId, id);
-    if (current.status === BillStatus.paid || current.status === BillStatus.cancelled) {
+    if (
+      current.status === BillStatus.paid ||
+      current.status === BillStatus.cancelled
+    ) {
       throw conflict('Conta já encerrada.');
     }
     if (dto.accountId) await this.requireAccount(storeId, dto.accountId);
@@ -300,11 +307,17 @@ export class FinanceBookService {
 
   async payPayable(storeId: string, id: string, dto: SettleBillDto) {
     const current = await this.findPayable(storeId, id);
-    if (current.status === BillStatus.cancelled || current.status === BillStatus.paid) {
+    if (
+      current.status === BillStatus.cancelled ||
+      current.status === BillStatus.paid
+    ) {
       throw conflict('Conta não pode ser paga.');
     }
     if (dto.accountId) await this.requireAccount(storeId, dto.accountId);
-    const remainder = Math.max(0, money(current.amount) - money(current.paidAmount));
+    const remainder = Math.max(
+      0,
+      money(current.amount) - money(current.paidAmount),
+    );
     const pay = roundMoney(Math.min(remainder, dto.amount));
     if (pay <= 0) throw validation('Informe um valor válido.');
     const paidAmount = roundMoney(money(current.paidAmount) + pay);
@@ -362,9 +375,16 @@ export class FinanceBookService {
     return toReceivableJson(row);
   }
 
-  async updateReceivable(storeId: string, id: string, dto: UpdateReceivableDto) {
+  async updateReceivable(
+    storeId: string,
+    id: string,
+    dto: UpdateReceivableDto,
+  ) {
     const current = await this.findReceivable(storeId, id);
-    if (current.status === BillStatus.paid || current.status === BillStatus.cancelled) {
+    if (
+      current.status === BillStatus.paid ||
+      current.status === BillStatus.cancelled
+    ) {
       throw conflict('Conta já encerrada.');
     }
     if (dto.accountId) await this.requireAccount(storeId, dto.accountId);
@@ -401,7 +421,10 @@ export class FinanceBookService {
 
   async receiveReceivable(storeId: string, id: string, dto: SettleBillDto) {
     const current = await this.findReceivable(storeId, id);
-    if (current.status === BillStatus.cancelled || current.status === BillStatus.paid) {
+    if (
+      current.status === BillStatus.cancelled ||
+      current.status === BillStatus.paid
+    ) {
       throw conflict('Conta não pode ser recebida.');
     }
     if (dto.accountId) await this.requireAccount(storeId, dto.accountId);
@@ -457,7 +480,8 @@ export class FinanceBookService {
         fromAccountId: fromId,
         toAccountId: toId,
         amount: roundMoney(dto.amount),
-        description: optionalText(dto.description) || TREASURY_KIND_LABEL[dto.kind],
+        description:
+          optionalText(dto.description) || TREASURY_KIND_LABEL[dto.kind],
         at: parseAt(dto.at),
       },
     });
@@ -542,7 +566,10 @@ export class FinanceBookService {
     }
     for (const move of treasury) {
       if (move.toAccountId) {
-        map.set(move.toAccountId, (map.get(move.toAccountId) ?? 0) + money(move.amount));
+        map.set(
+          move.toAccountId,
+          (map.get(move.toAccountId) ?? 0) + money(move.amount),
+        );
       }
       if (move.fromAccountId) {
         map.set(
@@ -552,7 +579,10 @@ export class FinanceBookService {
       }
     }
     for (const bill of payables) {
-      map.set(bill.accountId, (map.get(bill.accountId) ?? 0) - money(bill.paidAmount));
+      map.set(
+        bill.accountId,
+        (map.get(bill.accountId) ?? 0) - money(bill.paidAmount),
+      );
     }
     for (const bill of receivables) {
       map.set(
@@ -564,13 +594,17 @@ export class FinanceBookService {
   }
 
   private async findAccount(storeId: string, id: string) {
-    const row = await this.prisma.bankAccount.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.bankAccount.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('Conta bancária não encontrada.');
     return row;
   }
 
   private async requireAccount(storeId: string, id: string) {
-    const row = await this.prisma.bankAccount.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.bankAccount.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw validation('Conta bancária inválida.');
     return row;
   }
@@ -582,7 +616,9 @@ export class FinanceBookService {
   }
 
   private async findReceivable(storeId: string, id: string) {
-    const row = await this.prisma.receivable.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.receivable.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('Conta a receber não encontrada.');
     return row;
   }

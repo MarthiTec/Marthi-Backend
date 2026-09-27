@@ -8,7 +8,12 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CrmStage } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth.types';
@@ -66,7 +71,10 @@ export class CrmController {
 
   @Get('profiles/:sellerId')
   @ApiOperation({ summary: 'Perfil social do vendedor' })
-  getProfile(@CurrentUser() user: AuthUser, @Param('sellerId') sellerId: string) {
+  getProfile(
+    @CurrentUser() user: AuthUser,
+    @Param('sellerId') sellerId: string,
+  ) {
     return this.crm.getProfile(user.storeId, sellerId);
   }
 

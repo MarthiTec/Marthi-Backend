@@ -29,7 +29,13 @@ export class UpdateStorePlanDto {
   modules!: ModuleId[];
 }
 
-const TOTEM_VERTICALS = ['general', 'food', 'retail', 'phones', 'optics'] as const;
+const TOTEM_VERTICALS = [
+  'general',
+  'food',
+  'retail',
+  'phones',
+  'optics',
+] as const;
 const TOTEM_LAYOUTS = ['standard', 'logoPromo'] as const;
 const TOTEM_KEYBOARDS = ['top', 'bottom'] as const;
 

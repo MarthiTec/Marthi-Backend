@@ -33,6 +33,10 @@ import { CrmModule } from './modules/crm/crm.module';
 import { EcommerceModule } from './modules/ecommerce/ecommerce.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
+import { CardapioModule } from './modules/cardapio/cardapio.module';
+import { KitchenModule } from './modules/kitchen/kitchen.module';
 
 @Module({
   imports: [
@@ -70,6 +74,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     EcommerceModule,
     AuditModule,
     DashboardModule,
+    QuotesModule,
+    PromotionsModule,
+    CardapioModule,
+    KitchenModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

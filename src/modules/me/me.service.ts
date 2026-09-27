@@ -5,15 +5,18 @@ import { validation } from '../../common/errors/http';
 import { AuthUser } from '../auth/types/auth.types';
 import { UpdateOperatorProfileDto } from './dto/profile.dto';
 
-function toProfileJson(row: {
-  displayName: string;
-  role: string;
-  photo: string | null;
-  email: string;
-  phone: string;
-  address: string;
-  theme: string;
-}, loginEmail: string) {
+function toProfileJson(
+  row: {
+    displayName: string;
+    role: string;
+    photo: string | null;
+    email: string;
+    phone: string;
+    address: string;
+    theme: string;
+  },
+  loginEmail: string,
+) {
   return {
     displayName: row.displayName,
     role: row.role,
@@ -60,7 +63,8 @@ export class MeService {
         photo: dto.photo === undefined ? current.photo : dto.photo,
         email: dto.email !== undefined ? dto.email.trim() : current.email,
         phone: dto.phone !== undefined ? dto.phone.trim() : current.phone,
-        address: dto.address !== undefined ? dto.address.trim() : current.address,
+        address:
+          dto.address !== undefined ? dto.address.trim() : current.address,
         theme: dto.theme ?? current.theme,
       },
     });

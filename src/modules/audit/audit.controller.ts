@@ -1,5 +1,17 @@
-import { Body, Controller, Get, ParseEnumPipe, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  ParseEnumPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuditKind } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth.types';
@@ -30,7 +42,9 @@ export class AuditController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Registrar evento de auditoria (login, ação, etc.)' })
+  @ApiOperation({
+    summary: 'Registrar evento de auditoria (login, ação, etc.)',
+  })
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateAuditDto) {
     return this.audit.create(user, dto);
   }

@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,9 +14,10 @@ import {
 } from 'class-validator';
 
 export class PosSaleLineDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  stockId!: string;
+  stockId?: string;
 
   @ApiProperty()
   @IsString()
@@ -26,7 +28,7 @@ export class PosSaleLineDto {
   @ApiProperty()
   @Type(() => Number)
   @IsNumber()
-  @Min(1)
+  @Min(0.001) // Suporta unidades pesadas / balança (KG)
   qty!: number;
 
   @ApiProperty()
@@ -40,6 +42,16 @@ export class PosSaleLineDto {
   @IsString()
   @MaxLength(20)
   imei?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isAdHoc?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  itemType?: 'product' | 'ad_hoc';
 }
 
 export class ClosePosSaleDto {
@@ -47,6 +59,16 @@ export class ClosePosSaleDto {
   @IsOptional()
   @IsString()
   ticketId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  localId?: string;
 
   @ApiProperty()
   @IsString()

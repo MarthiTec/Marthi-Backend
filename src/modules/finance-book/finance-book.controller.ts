@@ -8,7 +8,12 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { BillStatus } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuthUser } from '../auth/types/auth.types';
@@ -187,7 +192,9 @@ export class TreasuryController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Lançar movimento (saldo derivado, sem coluna de saldo)' })
+  @ApiOperation({
+    summary: 'Lançar movimento (saldo derivado, sem coluna de saldo)',
+  })
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateTreasuryDto) {
     return this.book.createTreasury(user.storeId, dto);
   }

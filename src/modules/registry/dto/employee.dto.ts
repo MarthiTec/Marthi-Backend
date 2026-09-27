@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
@@ -62,6 +63,11 @@ export class CreateEmployeeDto {
   @IsArray()
   @IsEnum(AccessArea, { each: true })
   accessAreas?: AccessArea[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  permissions?: Record<string, boolean>;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -125,6 +131,11 @@ export class UpdateEmployeeDto {
   @IsArray()
   @IsEnum(AccessArea, { each: true })
   accessAreas?: AccessArea[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  permissions?: Record<string, boolean>;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -1,9 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  EcommerceChannelId,
-  EcommerceListingStatus,
-  EcommerceOrderStatus,
-} from '@prisma/client';
+import { EcommerceChannelId, EcommerceListingStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -24,14 +20,20 @@ export class UpdateEcommerceChannelDto {
   @MaxLength(180)
   storeName?: string;
 
-  @ApiPropertyOptional({ type: 'object', additionalProperties: { type: 'string' } })
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'string' },
+  })
   @IsOptional()
   @IsObject()
   credentials?: Record<string, string>;
 }
 
 export class ConnectEcommerceChannelDto {
-  @ApiPropertyOptional({ type: 'object', additionalProperties: { type: 'string' } })
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: { type: 'string' },
+  })
   @IsOptional()
   @IsObject()
   credentials?: Record<string, string>;

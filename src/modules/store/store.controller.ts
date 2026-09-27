@@ -37,4 +37,28 @@ export class StoreController {
   ) {
     return this.store.updateTotemSettings(user.storeId, dto);
   }
+
+  @Get('customization')
+  @ApiOperation({ summary: 'Customização de ramo e visual da loja' })
+  getCustomization(@CurrentUser() user: AuthUser) {
+    return this.store.getCustomization(user.storeId);
+  }
+
+  @Put('customization')
+  @ApiOperation({ summary: 'Atualizar customização de ramo da loja' })
+  updateCustomization(@CurrentUser() user: AuthUser, @Body() dto: any) {
+    return this.store.updateCustomization(user.storeId, dto);
+  }
+
+  @Get('operations')
+  @ApiOperation({ summary: 'Atalhos de operações da loja' })
+  getOperations(@CurrentUser() user: AuthUser) {
+    return this.store.getOperations(user.storeId);
+  }
+
+  @Put('operations')
+  @ApiOperation({ summary: 'Atualizar atalhos de operações da loja' })
+  updateOperations(@CurrentUser() user: AuthUser, @Body() shortcuts: any) {
+    return this.store.updateOperations(user.storeId, shortcuts);
+  }
 }

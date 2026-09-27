@@ -128,7 +128,12 @@ export class TotemService {
     const today = todayKey();
     const rankingMap = new Map<
       string,
-      { productId: string; productName: string; clicks: number; clicksToday: number }
+      {
+        productId: string;
+        productName: string;
+        clicks: number;
+        clicksToday: number;
+      }
     >();
     let clicksToday = 0;
     for (const click of clicks) {
@@ -152,14 +157,17 @@ export class TotemService {
       .sort((a, b) => b.clicks - a.clicks || b.clicksToday - a.clicksToday)
       .slice(0, RANKING_LIMIT);
 
-    const proposalsToday = tickets.filter((item) => dayKey(item.createdAt) === today).length;
+    const proposalsToday = tickets.filter(
+      (item) => dayKey(item.createdAt) === today,
+    ).length;
     const soldToday = tickets.filter(
       (item) =>
         item.status === TicketStatus.sold &&
         dayKey(item.closedAt ?? item.createdAt) === today,
     ).length;
     const openToday = tickets.filter(
-      (item) => item.status === TicketStatus.open && dayKey(item.createdAt) === today,
+      (item) =>
+        item.status === TicketStatus.open && dayKey(item.createdAt) === today,
     ).length;
 
     const buyersToday = totemBuyersToday(tickets, today);
@@ -287,7 +295,8 @@ function totemBuyersToday(tickets: TotemTicketRow[], today: string) {
   >();
 
   for (const ticket of sold) {
-    const key = phoneKey(ticket.customerPhone) || ticket.customerName.toLowerCase();
+    const key =
+      phoneKey(ticket.customerPhone) || ticket.customerName.toLowerCase();
     if (!key) continue;
     const closedAt = ticket.closedAt ?? ticket.createdAt;
     const closedIso = isoRequired(closedAt);
@@ -319,6 +328,7 @@ function totemBuyersToday(tickets: TotemTicketRow[], today: string) {
     .filter((item) => item.purchasesToday > 0)
     .sort(
       (a, b) =>
-        b.purchasesToday - a.purchasesToday || b.lastPurchaseAt.localeCompare(a.lastPurchaseAt),
+        b.purchasesToday - a.purchasesToday ||
+        b.lastPurchaseAt.localeCompare(a.lastPurchaseAt),
     );
 }

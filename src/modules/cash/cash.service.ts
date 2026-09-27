@@ -135,43 +135,43 @@ export class CashService {
     const operatorName = dto.operatorName.trim() || 'Operador';
     try {
       const row = await this.prisma.$transaction(async (tx) => {
-      const session = await tx.cashSession.create({
-        data: {
-          id: prefixedId('CX'),
-          storeId,
-          openedAt,
-          openingFloat,
-          expectedCash: openingFloat,
-          operatorName,
-          status: CashSessionStatus.open,
-        },
-      });
-      await tx.cashMovement.create({
-        data: {
-          id: prefixedId('CMV'),
-          sessionId: session.id,
-          kind: CashMovementKind.open,
-          amount: openingFloat,
-          note: optionalText(dto.note) || 'Abertura de caixa',
-          operatorName,
-          createdAt: openedAt,
-        },
-      });
-      await tx.cashMovement.create({
-        data: {
-          id: prefixedId('CMV'),
-          sessionId: session.id,
-          kind: CashMovementKind.drawer,
-          amount: 0,
-          note: 'Gaveta na abertura',
-          operatorName,
-          createdAt: openedAt,
-        },
-      });
-      return tx.cashSession.findFirstOrThrow({
-        where: { id: session.id },
-        include: sessionInclude,
-      });
+        const session = await tx.cashSession.create({
+          data: {
+            id: prefixedId('CX'),
+            storeId,
+            openedAt,
+            openingFloat,
+            expectedCash: openingFloat,
+            operatorName,
+            status: CashSessionStatus.open,
+          },
+        });
+        await tx.cashMovement.create({
+          data: {
+            id: prefixedId('CMV'),
+            sessionId: session.id,
+            kind: CashMovementKind.open,
+            amount: openingFloat,
+            note: optionalText(dto.note) || 'Abertura de caixa',
+            operatorName,
+            createdAt: openedAt,
+          },
+        });
+        await tx.cashMovement.create({
+          data: {
+            id: prefixedId('CMV'),
+            sessionId: session.id,
+            kind: CashMovementKind.drawer,
+            amount: 0,
+            note: 'Gaveta na abertura',
+            operatorName,
+            createdAt: openedAt,
+          },
+        });
+        return tx.cashSession.findFirstOrThrow({
+          where: { id: session.id },
+          include: sessionInclude,
+        });
       });
       return toSessionJson(row);
     } catch (error) {
@@ -179,13 +179,20 @@ export class CashService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw conflict('Já existe um caixa aberto. Feche ou consulte os caixas.');
+        throw conflict(
+          'Já existe um caixa aberto. Feche ou consulte os caixas.',
+        );
       }
       throw error;
     }
   }
 
-  async aporte(storeId: string, id: string, dto: CashMoneyDto, fallbackOperator: string) {
+  async aporte(
+    storeId: string,
+    id: string,
+    dto: CashMoneyDto,
+    fallbackOperator: string,
+  ) {
     return this.mutateOpen(storeId, id, async (tx, session) => {
       const amount = roundMoney(Math.abs(dto.amount));
       if (amount <= 0) throw validation('Informe o valor do aporte.');
@@ -193,7 +200,9 @@ export class CashService {
       const beneficiary = this.beneficiary(dto);
       await tx.cashSession.update({
         where: { id: session.id },
-        data: { expectedCash: roundMoney(money(session.expectedCash) + amount) },
+        data: {
+          expectedCash: roundMoney(money(session.expectedCash) + amount),
+        },
       });
       await tx.cashMovement.create({
         data: {
@@ -206,14 +215,22 @@ export class CashService {
           beneficiaryType: beneficiary.type,
           beneficiaryId: beneficiary.id,
           beneficiaryName: beneficiary.name,
-          operatorName: operatorOf(dto.operatorName, session.operatorName || fallbackOperator),
+          operatorName: operatorOf(
+            dto.operatorName,
+            session.operatorName || fallbackOperator,
+          ),
           createdAt: parseAt(dto.at),
         },
       });
     });
   }
 
-  async sangria(storeId: string, id: string, dto: CashMoneyDto, fallbackOperator: string) {
+  async sangria(
+    storeId: string,
+    id: string,
+    dto: CashMoneyDto,
+    fallbackOperator: string,
+  ) {
     return this.mutateOpen(storeId, id, async (tx, session) => {
       const amount = roundMoney(Math.abs(dto.amount));
       if (amount <= 0) throw validation('Informe o valor da sangria.');
@@ -224,7 +241,9 @@ export class CashService {
       const beneficiary = this.beneficiary(dto);
       await tx.cashSession.update({
         where: { id: session.id },
-        data: { expectedCash: roundMoney(money(session.expectedCash) - amount) },
+        data: {
+          expectedCash: roundMoney(money(session.expectedCash) - amount),
+        },
       });
       await tx.cashMovement.create({
         data: {
@@ -237,14 +256,22 @@ export class CashService {
           beneficiaryType: beneficiary.type,
           beneficiaryId: beneficiary.id,
           beneficiaryName: beneficiary.name,
-          operatorName: operatorOf(dto.operatorName, session.operatorName || fallbackOperator),
+          operatorName: operatorOf(
+            dto.operatorName,
+            session.operatorName || fallbackOperator,
+          ),
           createdAt: parseAt(dto.at),
         },
       });
     });
   }
 
-  async drawer(storeId: string, id: string, dto: CashDrawerDto, fallbackOperator: string) {
+  async drawer(
+    storeId: string,
+    id: string,
+    dto: CashDrawerDto,
+    fallbackOperator: string,
+  ) {
     return this.mutateOpen(storeId, id, async (tx, session) => {
       await tx.cashMovement.create({
         data: {
@@ -253,7 +280,10 @@ export class CashService {
           kind: CashMovementKind.drawer,
           amount: 0,
           note: optionalText(dto.note) || 'Abertura de gaveta para contagem',
-          operatorName: operatorOf(dto.operatorName, session.operatorName || fallbackOperator),
+          operatorName: operatorOf(
+            dto.operatorName,
+            session.operatorName || fallbackOperator,
+          ),
         },
       });
     });
@@ -335,7 +365,11 @@ export class CashService {
     return rows.map(toCreditJson);
   }
 
-  async createCredit(storeId: string, dto: CreateStoreCreditDto, fallbackOperator: string) {
+  async createCredit(
+    storeId: string,
+    dto: CreateStoreCreditDto,
+    fallbackOperator: string,
+  ) {
     const amount = roundMoney(Math.abs(dto.amount));
     if (amount <= 0) throw validation('Informe o valor do vale.');
     const operatorName = operatorOf(dto.operatorName, fallbackOperator);
@@ -364,7 +398,9 @@ export class CashService {
         }
         await tx.cashSession.update({
           where: { id: session.id },
-          data: { expectedCash: roundMoney(money(session.expectedCash) - amount) },
+          data: {
+            expectedCash: roundMoney(money(session.expectedCash) - amount),
+          },
         });
         await tx.cashMovement.create({
           data: {
@@ -381,7 +417,12 @@ export class CashService {
     });
   }
 
-  async useCredit(storeId: string, id: string, dto: UseStoreCreditDto, fallbackOperator: string) {
+  async useCredit(
+    storeId: string,
+    id: string,
+    dto: UseStoreCreditDto,
+    fallbackOperator: string,
+  ) {
     const amount = roundMoney(Math.abs(dto.amount));
     return this.prisma.$transaction(async (tx) => {
       const credit = await tx.storeCredit.findFirst({
@@ -391,14 +432,17 @@ export class CashService {
         throw notFound('Vale não encontrado ou já usado.');
       }
       if (amount <= 0 || amount > money(credit.remaining)) {
-        throw validation(`Saldo do vale: ${money(credit.remaining).toFixed(2)}.`);
+        throw validation(
+          `Saldo do vale: ${money(credit.remaining).toFixed(2)}.`,
+        );
       }
       const remaining = roundMoney(money(credit.remaining) - amount);
       const updated = await tx.storeCredit.update({
         where: { id: credit.id },
         data: {
           remaining,
-          status: remaining <= 0 ? StoreCreditStatus.used : StoreCreditStatus.open,
+          status:
+            remaining <= 0 ? StoreCreditStatus.used : StoreCreditStatus.open,
         },
       });
       const session = await tx.cashSession.findFirst({
@@ -407,7 +451,9 @@ export class CashService {
       if (session) {
         await tx.cashSession.update({
           where: { id: session.id },
-          data: { expectedCash: roundMoney(money(session.expectedCash) + amount) },
+          data: {
+            expectedCash: roundMoney(money(session.expectedCash) + amount),
+          },
         });
         await tx.cashMovement.create({
           data: {
@@ -416,7 +462,10 @@ export class CashService {
             kind: CashMovementKind.vale,
             amount,
             note: `Resgate vale ${credit.code}`,
-            operatorName: operatorOf(dto.operatorName, session.operatorName || fallbackOperator),
+            operatorName: operatorOf(
+              dto.operatorName,
+              session.operatorName || fallbackOperator,
+            ),
           },
         });
       }
@@ -446,7 +495,11 @@ export class CashService {
     }));
   }
 
-  async createExchange(storeId: string, dto: CreateExchangeDto, fallbackOperator: string) {
+  async createExchange(
+    storeId: string,
+    dto: CreateExchangeDto,
+    fallbackOperator: string,
+  ) {
     if (!dto.returnLines?.length && !dto.outLines?.length) {
       throw validation('Informe produtos de devolução e/ou saída.');
     }
@@ -504,7 +557,8 @@ export class CashService {
           orderId: dto.orderId.trim(),
           customerName: dto.customerName.trim() || 'Cliente',
           customerPhone: optionalText(dto.customerPhone),
-          returnLines: (dto.returnLines ?? []) as unknown as Prisma.InputJsonValue,
+          returnLines: (dto.returnLines ??
+            []) as unknown as Prisma.InputJsonValue,
           outLines: (dto.outLines ?? []) as unknown as Prisma.InputJsonValue,
           returnTotal,
           outTotal,
@@ -592,10 +646,13 @@ export class CashService {
       const session = await tx.cashSession.findFirst({
         where: { storeId, status: CashSessionStatus.open },
       });
-      if (!session) throw conflict('Abra o caixa para emitir vale vinculado ao caixa.');
+      if (!session)
+        throw conflict('Abra o caixa para emitir vale vinculado ao caixa.');
       await tx.cashSession.update({
         where: { id: session.id },
-        data: { expectedCash: roundMoney(money(session.expectedCash) - input.amount) },
+        data: {
+          expectedCash: roundMoney(money(session.expectedCash) - input.amount),
+        },
       });
       await tx.cashMovement.create({
         data: {
@@ -618,7 +675,10 @@ export class CashService {
         : CashBeneficiaryType.store;
     return {
       type,
-      id: type === CashBeneficiaryType.employee ? emptyToNull(dto.beneficiaryId) : null,
+      id:
+        type === CashBeneficiaryType.employee
+          ? emptyToNull(dto.beneficiaryId)
+          : null,
       name:
         type === CashBeneficiaryType.employee
           ? optionalText(dto.beneficiaryName) || 'Funcionário'
@@ -651,6 +711,22 @@ export class CashService {
     });
     if (!row) throw notFound('Caixa não encontrado.');
     return row;
+  }
+
+  async getSettings(storeId: string) {
+    const row = await this.prisma.posTerminalSetting.findUnique({
+      where: { storeId },
+    });
+    return (row?.settings as Record<string, unknown>) ?? {};
+  }
+
+  async putSettings(storeId: string, settings: any) {
+    const row = await this.prisma.posTerminalSetting.upsert({
+      where: { storeId },
+      create: { storeId, settings: settings ?? {} },
+      update: { settings: settings ?? {} },
+    });
+    return (row.settings as Record<string, unknown>) ?? {};
   }
 }
 

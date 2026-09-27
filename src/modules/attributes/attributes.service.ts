@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, ProductAttribute, ProductAttributeValue } from '@prisma/client';
+import {
+  Prisma,
+  ProductAttribute,
+  ProductAttributeValue,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { conflict, notFound, validation } from '../../common/errors/http';
 import { prefixedId } from '../../common/utils/ids';
@@ -44,7 +48,9 @@ export class AttributesService {
   }
 
   async create(storeId: string, dto: CreateAttributeDto) {
-    const count = await this.prisma.productAttribute.count({ where: { storeId } });
+    const count = await this.prisma.productAttribute.count({
+      where: { storeId },
+    });
     if (count >= MAX_ATTRIBUTES) {
       throw conflict(`Máximo de ${MAX_ATTRIBUTES} atributos por loja.`);
     }
@@ -88,7 +94,9 @@ export class AttributesService {
       await tx.productAttribute.update({ where: { id }, data });
       if (dto.values) {
         const next = uniqueValues(dto.values);
-        const existing = new Map(current.values.map((item) => [item.value, item]));
+        const existing = new Map(
+          current.values.map((item) => [item.value, item]),
+        );
         for (const [index, value] of next.entries()) {
           const found = existing.get(value);
           const delta = dto.priceDeltas?.[value];

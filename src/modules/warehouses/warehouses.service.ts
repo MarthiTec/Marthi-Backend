@@ -148,7 +148,9 @@ export class WarehousesService {
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.code !== undefined ? { code: dto.code.trim() } : {}),
-        ...(dto.address !== undefined ? { address: optionalText(dto.address) } : {}),
+        ...(dto.address !== undefined
+          ? { address: optionalText(dto.address) }
+          : {}),
         ...(dto.active !== undefined ? { active: dto.active } : {}),
       },
     });
@@ -178,7 +180,7 @@ export class WarehousesService {
     });
     if (!stock) throw validation('Item de estoque não encontrado.');
     await this.requireWarehouse(storeId, dto.warehouseId);
-    let supplierId: string | null = emptyToNull(dto.supplierId);
+    const supplierId: string | null = emptyToNull(dto.supplierId);
     let supplierName = optionalText(dto.supplierName);
     if (supplierId) {
       const supplier = await this.prisma.supplier.findFirst({
@@ -235,8 +237,12 @@ export class WarehousesService {
   }
 
   async createKit(storeId: string, dto: CreateKitDto) {
-    if (!dto.items?.length) throw validation('Adicione ao menos um item no kit.');
-    const parentStockId = await this.requireParentStock(storeId, dto.parentStockId);
+    if (!dto.items?.length)
+      throw validation('Adicione ao menos um item no kit.');
+    const parentStockId = await this.requireParentStock(
+      storeId,
+      dto.parentStockId,
+    );
     const items = await this.resolveKitItems(storeId, dto.items);
     const row = await this.prisma.$transaction(async (tx) => {
       const created = await tx.productKit.create({
@@ -273,7 +279,9 @@ export class WarehousesService {
         ? await this.requireParentStock(storeId, dto.parentStockId)
         : undefined;
     const items =
-      dto.items !== undefined ? await this.resolveKitItems(storeId, dto.items) : undefined;
+      dto.items !== undefined
+        ? await this.resolveKitItems(storeId, dto.items)
+        : undefined;
     if (items && items.length === 0) {
       throw validation('Adicione ao menos um item no kit.');
     }
@@ -325,7 +333,11 @@ export class WarehousesService {
     return rows.map(toMoveJson);
   }
 
-  async createMove(storeId: string, dto: CreateWarehouseMoveDto, operatorName: string) {
+  async createMove(
+    storeId: string,
+    dto: CreateWarehouseMoveDto,
+    operatorName: string,
+  ) {
     const stock = await this.prisma.stockItem.findFirst({
       where: { id: dto.stockId, storeId },
     });
@@ -442,18 +454,26 @@ export class WarehousesService {
   }
 
   private async findWarehouse(storeId: string, id: string) {
-    const row = await this.prisma.warehouse.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.warehouse.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('Almoxarifado não encontrado.');
     return row;
   }
 
   private async requireWarehouse(storeId: string, id: string) {
-    const row = await this.prisma.warehouse.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.warehouse.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw validation('Almoxarifado inválido.');
     return row;
   }
 
-  private async assertUniqueCode(storeId: string, code: string, exceptId?: string) {
+  private async assertUniqueCode(
+    storeId: string,
+    code: string,
+    exceptId?: string,
+  ) {
     const existing = await this.prisma.warehouse.findFirst({
       where: { storeId, code, ...(exceptId ? { NOT: { id: exceptId } } : {}) },
     });

@@ -40,6 +40,10 @@ export function toOrderJson(row: OrderRow, withLines = false) {
     priceTableId: row.priceTableId,
     sellerId: row.sellerId,
     sellerName: row.sellerName,
+    idempotencyKey: row.idempotencyKey,
+    localId: row.localId,
+    cancelledAt: row.cancelledAt ? isoRequired(row.cancelledAt) : null,
+    cancelReason: row.cancelReason,
     createdAt: isoRequired(row.createdAt),
   };
   if (withLines) {
@@ -47,9 +51,11 @@ export function toOrderJson(row: OrderRow, withLines = false) {
       id: line.id,
       stockId: line.stockId,
       name: line.name,
-      qty: line.qty,
+      qty: Number(line.qty),
       unitPrice: money(line.unitPrice),
       imei: line.imei,
+      isAdHoc: line.isAdHoc,
+      itemType: line.itemType,
     }));
   }
   return json;
@@ -110,11 +116,24 @@ export class SalesService {
 
   async closeSale(user: AuthUser, dto: ClosePosSaleDto) {
     const storeId = user.storeId;
+
+    if (dto.idempotencyKey) {
+      const existing = await this.prisma.salesOrder.findFirst({
+        where: { storeId, idempotencyKey: dto.idempotencyKey },
+        include: { lines: true },
+      });
+      if (existing) {
+        return toOrderJson(existing, true);
+      }
+    }
+
     const subtotal = dto.lines.reduce(
       (sum, line) => sum + line.unitPrice * line.qty,
       0,
     );
-    const amount = roundMoney(Math.max(0, subtotal - dto.discount + dto.surcharge));
+    const amount = roundMoney(
+      Math.max(0, subtotal - dto.discount + dto.surcharge),
+    );
     const summary = dto.lines
       .map((line) => `${line.qty}x ${line.name}`)
       .join(', ');
@@ -153,8 +172,15 @@ export class SalesService {
         });
 
         for (const line of dto.lines) {
+          const isAdHoc = Boolean(
+            line.isAdHoc || line.itemType === 'ad_hoc' || !line.stockId,
+          );
+          if (isAdHoc) {
+            // Venda avulsa: Não valida no stockItem e não diminui estoque físico
+            continue;
+          }
           const stock = await tx.stockItem.findFirst({
-            where: { id: line.stockId, storeId },
+            where: { id: line.stockId!, storeId },
           });
           if (!stock) {
             throw notFound(`Item de estoque não encontrado: ${line.stockId}`);
@@ -168,7 +194,7 @@ export class SalesService {
             line.imei && stock.imei === line.imei ? '' : stock.imei;
           await tx.stockItem.update({
             where: { id: stock.id },
-            data: { qty: stock.qty - line.qty, imei: nextImei },
+            data: { qty: stock.qty - Math.round(line.qty), imei: nextImei },
           });
         }
 
@@ -191,15 +217,24 @@ export class SalesService {
             priceTableId: dto.priceTableId ?? null,
             sellerId: dto.sellerId?.trim() || user.id,
             sellerName: dto.sellerName?.trim() || user.name,
+            idempotencyKey: dto.idempotencyKey ?? null,
+            localId: dto.localId ?? null,
             lines: {
-              create: dto.lines.map((line) => ({
-                id: prefixedId('SOL'),
-                stockId: line.stockId,
-                name: line.name,
-                qty: line.qty,
-                unitPrice: line.unitPrice,
-                imei: line.imei ?? '',
-              })),
+              create: dto.lines.map((line) => {
+                const isAdHoc = Boolean(
+                  line.isAdHoc || line.itemType === 'ad_hoc' || !line.stockId,
+                );
+                return {
+                  id: prefixedId('SOL'),
+                  stockId: isAdHoc ? null : line.stockId,
+                  name: line.name,
+                  qty: line.qty,
+                  unitPrice: line.unitPrice,
+                  imei: line.imei ?? '',
+                  isAdHoc,
+                  itemType: line.itemType ?? (isAdHoc ? 'ad_hoc' : 'product'),
+                };
+              }),
             },
           },
           include: { lines: true },
@@ -238,6 +273,56 @@ export class SalesService {
     );
 
     return toOrderJson(order, true);
+  }
+
+  async cancelOrder(user: AuthUser, orderId: string, reason: string) {
+    const storeId = user.storeId;
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.salesOrder.findFirst({
+        where: { id: orderId, storeId },
+        include: { lines: true },
+      });
+      if (!order) throw notFound('Pedido não encontrado.');
+      if (order.status === TicketStatus.cancelled) {
+        throw conflict('Este pedido já foi cancelado.');
+      }
+
+      // 1. Atualiza status do pedido
+      const updated = await tx.salesOrder.update({
+        where: { id: order.id },
+        data: {
+          status: TicketStatus.cancelled,
+          cancelledAt: new Date(),
+          cancelReason: reason,
+        },
+        include: { lines: true },
+      });
+
+      // 2. Lançamento financeiro de estorno
+      await tx.financeEntry.create({
+        data: {
+          id: prefixedId('FIN'),
+          storeId,
+          type: FinanceType.out,
+          label: `Estorno Venda ${order.id} · ${reason}`,
+          amount: order.amount,
+          source: FinanceSource.pos,
+          refId: order.id,
+        },
+      });
+
+      // 3. Devolução de estoque para itens com cadastro (não avulsos)
+      for (const line of order.lines) {
+        if (!line.isAdHoc && line.stockId) {
+          await tx.stockItem.updateMany({
+            where: { id: line.stockId, storeId },
+            data: { qty: { increment: Math.round(Number(line.qty)) } },
+          });
+        }
+      }
+
+      return toOrderJson(updated, true);
+    });
   }
 
   async listTickets(storeId: string, status?: TicketStatus) {
@@ -287,8 +372,7 @@ export class SalesService {
 
   async patchTicket(storeId: string, id: string, dto: PatchPosTicketDto) {
     await this.findTicket(storeId, id);
-    const closedAt =
-      dto.status === TicketStatus.open ? null : new Date();
+    const closedAt = dto.status === TicketStatus.open ? null : new Date();
     const row = await this.prisma.posTicket.update({
       where: { id },
       data: { status: dto.status, closedAt },

@@ -20,7 +20,12 @@ export class CustomersService {
         { name: { contains: needle, mode: 'insensitive' } },
         { document: { contains: needle, mode: 'insensitive' } },
         { email: { contains: needle, mode: 'insensitive' } },
-        ...(digits ? [{ phoneDigits: { contains: digits } }, { phone: { contains: needle } }] : [{ phone: { contains: needle } }]),
+        ...(digits
+          ? [
+              { phoneDigits: { contains: digits } },
+              { phone: { contains: needle } },
+            ]
+          : [{ phone: { contains: needle } }]),
       ];
     }
 
@@ -78,12 +83,14 @@ export class CustomersService {
 
     if (dto.name !== undefined) data.name = dto.name.trim();
     if (dto.document !== undefined) data.document = optionalText(dto.document);
-    if (dto.email !== undefined) data.email = optionalText(dto.email).toLowerCase();
+    if (dto.email !== undefined)
+      data.email = optionalText(dto.email).toLowerCase();
     if (dto.city !== undefined) data.city = optionalText(dto.city);
     if (dto.zipCode !== undefined) data.zipCode = optionalText(dto.zipCode);
     if (dto.street !== undefined) data.street = optionalText(dto.street);
     if (dto.number !== undefined) data.number = optionalText(dto.number);
-    if (dto.complement !== undefined) data.complement = optionalText(dto.complement);
+    if (dto.complement !== undefined)
+      data.complement = optionalText(dto.complement);
     if (dto.neighborhood !== undefined) {
       data.neighborhood = optionalText(dto.neighborhood);
     }
@@ -164,7 +171,9 @@ export class CustomersService {
   }
 
   private async findOwned(storeId: string, id: string) {
-    const row = await this.prisma.customer.findFirst({ where: { id, storeId } });
+    const row = await this.prisma.customer.findFirst({
+      where: { id, storeId },
+    });
     if (!row) throw notFound('Cliente não encontrado.');
     return row;
   }

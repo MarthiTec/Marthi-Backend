@@ -40,7 +40,7 @@ export function setupDbTunnel(server: http.Server) {
           wss.emit('connection', ws, request);
         });
       }
-    } catch (err) {
+    } catch {
       socket.destroy();
     }
   });
@@ -78,12 +78,16 @@ export function setupDbTunnel(server: http.Server) {
     const cleanup = () => {
       try {
         pgSocket.destroy();
-      } catch {}
+      } catch (_e) {
+        void _e;
+      }
       try {
         if (ws.readyState === WebSocket.OPEN) {
           ws.close();
         }
-      } catch {}
+      } catch (_e) {
+        void _e;
+      }
     };
 
     ws.on('close', () => {

@@ -24,7 +24,13 @@ import {
 
 const CHANNEL_META: Record<
   EcommerceChannelId,
-  { kind: EcommerceChannelKind; name: string; blurb: string; message: string; required: string[] }
+  {
+    kind: EcommerceChannelKind;
+    name: string;
+    blurb: string;
+    message: string;
+    required: string[];
+  }
 > = {
   mercadolivre: {
     kind: EcommerceChannelKind.marketplace,
@@ -52,7 +58,14 @@ const CHANNEL_META: Record<
     name: 'Amazon',
     blurb: 'SP-API — pedidos e inventário Amazon.br.',
     message: 'Configure LWA + Seller ID + Marketplace ID.',
-    required: ['lwaClientId', 'lwaClientSecret', 'refreshToken', 'sellerId', 'marketplaceId', 'storeName'],
+    required: [
+      'lwaClientId',
+      'lwaClientSecret',
+      'refreshToken',
+      'sellerId',
+      'marketplaceId',
+      'storeName',
+    ],
   },
   tray: {
     kind: EcommerceChannelKind.hub,
@@ -107,7 +120,9 @@ export class EcommerceService {
       where: { storeId },
     });
     const byId = new Map(rows.map((row) => [row.channelId, row]));
-    return Promise.all(CHANNEL_IDS.map((id) => this.toChannelJson(byId.get(id)!)));
+    return Promise.all(
+      CHANNEL_IDS.map((id) => this.toChannelJson(byId.get(id)!)),
+    );
   }
 
   async getChannel(storeId: string, channelId: EcommerceChannelId) {
@@ -304,14 +319,21 @@ export class EcommerceService {
       message: `Publicado a partir do estoque · ${images.length} imagem(ns)`,
     };
     const row = existing
-      ? await this.prisma.ecommerceListing.update({ where: { id: existing.id }, data })
+      ? await this.prisma.ecommerceListing.update({
+          where: { id: existing.id },
+          data,
+        })
       : await this.prisma.ecommerceListing.create({
           data: { id: prefixedId('LST'), storeId, ...data },
         });
     return toListingJson(row);
   }
 
-  async updateListing(storeId: string, id: string, dto: UpdateEcommerceListingDto) {
+  async updateListing(
+    storeId: string,
+    id: string,
+    dto: UpdateEcommerceListingDto,
+  ) {
     await this.getListing(storeId, id);
     const row = await this.prisma.ecommerceListing.update({
       where: { id },
@@ -324,7 +346,9 @@ export class EcommerceService {
           ? { images: dto.images.map((item) => item.trim()).filter(Boolean) }
           : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
-        ...(dto.message !== undefined ? { message: optionalText(dto.message) } : {}),
+        ...(dto.message !== undefined
+          ? { message: optionalText(dto.message) }
+          : {}),
         syncedAt: new Date(),
       },
     });

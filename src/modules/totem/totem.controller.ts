@@ -50,14 +50,18 @@ export class TotemController {
   @Public()
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @Post('analytics/clicks')
-  @ApiOperation({ summary: 'Registrar clique de produto no totem (público, loja seed)' })
+  @ApiOperation({
+    summary: 'Registrar clique de produto no totem (público, loja seed)',
+  })
   trackClick(@Body() dto: TotemClickDto) {
     return this.totem.trackClick(dto);
   }
 
   @Get('analytics/summary')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Ranking de cliques (dia + total) e estatísticas do dia' })
+  @ApiOperation({
+    summary: 'Ranking de cliques (dia + total) e estatísticas do dia',
+  })
   summary(@CurrentUser() user: AuthUser) {
     return this.totem.summary(user.storeId);
   }

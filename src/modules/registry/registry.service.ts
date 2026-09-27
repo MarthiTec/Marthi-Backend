@@ -60,6 +60,7 @@ export function toEmployeeJson(row: Employee) {
     isSystemUser: row.isSystemUser,
     userEmail: row.userEmail,
     accessAreas: row.accessAreas,
+    permissions: (row.permissions as Record<string, unknown>) ?? {},
     active: row.active,
     sellerId: row.sellerId ?? undefined,
     createdAt: isoRequired(row.createdAt),
@@ -254,6 +255,7 @@ export class RegistryService {
         isSystemUser: dto.isSystemUser ?? false,
         userEmail: optionalText(dto.userEmail).toLowerCase(),
         accessAreas: this.areasForRole(role, dto.accessAreas),
+        permissions: dto.permissions ?? {},
         active: dto.active ?? true,
         sellerId,
       },
@@ -293,7 +295,15 @@ export class RegistryService {
           ? { userEmail: optionalText(dto.userEmail).toLowerCase() }
           : {}),
         ...(dto.accessAreas !== undefined || dto.role !== undefined
-          ? { accessAreas: this.areasForRole(role, dto.accessAreas ?? current.accessAreas) }
+          ? {
+              accessAreas: this.areasForRole(
+                role,
+                dto.accessAreas ?? current.accessAreas,
+              ),
+            }
+          : {}),
+        ...(dto.permissions !== undefined
+          ? { permissions: dto.permissions }
           : {}),
         ...(dto.active !== undefined ? { active: dto.active } : {}),
         ...(dto.sellerId !== undefined ? { sellerId } : {}),
@@ -344,6 +354,7 @@ export class RegistryService {
       return {
         role: employee.role,
         accessAreas: areas,
+        permissions: (employee.permissions as Record<string, boolean>) ?? {},
         employeeId: employee.id,
         sellerId: employee.sellerId ?? undefined,
       };
@@ -356,6 +367,7 @@ export class RegistryService {
       return {
         role: EmployeeRole.admin,
         accessAreas: [...ALL_ACCESS_AREAS],
+        permissions: {},
         employeeId: undefined,
         sellerId: undefined,
       };
@@ -364,6 +376,7 @@ export class RegistryService {
     return {
       role: EmployeeRole.operator,
       accessAreas: [] as AccessArea[],
+      permissions: {},
       employeeId: undefined,
       sellerId: undefined,
     };
