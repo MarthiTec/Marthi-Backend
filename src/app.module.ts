@@ -45,7 +45,7 @@ import { KitchenModule } from './modules/kitchen/kitchen.module';
       validate: validateEnv,
     }),
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60_000, limit: 60 }],
+      throttlers: [{ ttl: 60_000, limit: 300 }],
     }),
     PrismaModule,
     UsersModule,

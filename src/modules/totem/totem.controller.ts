@@ -14,7 +14,7 @@ export class TotemController {
   constructor(private readonly totem: TotemService) {}
 
   @Public()
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 240, ttl: 60_000 } })
   @Get('catalog')
   @ApiOperation({
     summary: 'Catálogo do totem (público) — estoque com showOnTotem',
@@ -24,7 +24,7 @@ export class TotemController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 240, ttl: 60_000 } })
   @Get('settings')
   @ApiOperation({ summary: 'Configuração do totem (público, loja seed)' })
   settings() {
@@ -32,7 +32,7 @@ export class TotemController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Throttle({ default: { limit: 240, ttl: 60_000 } })
   @Get('attributes')
   @ApiOperation({ summary: 'Atributos do totem (público, loja seed)' })
   attributes() {
