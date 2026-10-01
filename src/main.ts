@@ -46,7 +46,25 @@ async function bootstrap() {
     .filter(Boolean);
 
   app.enableCors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin) return callback(null, true);
+      const isDiscloud =
+        origin.endsWith('.discloud.app') || origin.endsWith('.discloud.dev');
+      const isLocal =
+        origin.includes('localhost') || origin.includes('127.0.0.1');
+      if (
+        corsOrigins.length === 0 ||
+        corsOrigins.includes(origin) ||
+        isDiscloud ||
+        isLocal
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   });
 
