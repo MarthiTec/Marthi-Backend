@@ -5,6 +5,7 @@ export type AuthUser = {
   name: string;
   picture: string | null;
   provider: 'google' | 'password';
+  role?: string;
 };
 
 export type AuthSession = {

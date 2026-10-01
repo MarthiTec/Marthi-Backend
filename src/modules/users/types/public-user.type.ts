@@ -9,5 +9,6 @@ export function toAuthUser(user: User): AuthUser {
     name: user.name,
     picture: user.picture,
     provider: user.provider,
+    role: 'admin',
   };
 }
