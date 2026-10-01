@@ -192,9 +192,12 @@ enum EmployeeRole {
 }
 
 enum AccessArea {
+  painel
   totem
   pdv
   os
+  erp
+  fiscal
   erp_customers
   erp_stock
   erp_attrs

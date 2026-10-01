@@ -1,9 +1,12 @@
 import { AccessArea } from '@prisma/client';
 
 export const ALL_ACCESS_AREAS: AccessArea[] = [
+  AccessArea.painel,
   AccessArea.totem,
   AccessArea.pdv,
   AccessArea.os,
+  AccessArea.erp,
+  AccessArea.fiscal,
   AccessArea.erp_customers,
   AccessArea.erp_stock,
   AccessArea.erp_attrs,
