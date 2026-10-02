@@ -10,7 +10,7 @@ import { setupDbTunnel } from './common/utils/db-tunnel';
 
 process.stderr.write(`[marthi] node starting ${process.version}\n`);
 
-function applyMigrations() {
+function applyMigrationsAndSeed() {
   const prismaCli = join(
     process.cwd(),
     'node_modules',
@@ -19,10 +19,24 @@ function applyMigrations() {
     'index.js',
   );
   process.stderr.write('[marthi] prisma migrate deploy\n');
-  execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
-    stdio: 'inherit',
-    env: process.env,
-  });
+  try {
+    execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
+      stdio: 'inherit',
+      env: process.env,
+    });
+  } catch (err) {
+    console.error('[marthi] migrate deploy failed', err);
+  }
+
+  process.stderr.write('[marthi] prisma db seed\n');
+  try {
+    execFileSync(process.execPath, [prismaCli, 'db', 'seed'], {
+      stdio: 'inherit',
+      env: process.env,
+    });
+  } catch (err) {
+    console.error('[marthi] db seed failed or skipped', err);
+  }
 }
 
 async function bootstrap() {
@@ -97,11 +111,7 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
   process.stderr.write(`[marthi] listening on 0.0.0.0:${port}\n`);
 
-  try {
-    applyMigrations();
-  } catch (error) {
-    console.error('[marthi] migrate failed', error);
-  }
+  applyMigrationsAndSeed();
 }
 
 void bootstrap().catch((error: unknown) => {
