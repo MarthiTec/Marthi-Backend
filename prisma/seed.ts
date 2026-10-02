@@ -200,6 +200,43 @@ async function main() {
     },
   });
 
+  await prisma.employee.upsert({
+    where: { id: 'EMP-TESTE-ADMIN' },
+    update: {
+      role: EmployeeRole.admin,
+      userEmail: email,
+      email,
+      accessAreas: [
+        AccessArea.painel,
+        AccessArea.totem,
+        AccessArea.pdv,
+        AccessArea.os,
+        AccessArea.erp,
+        AccessArea.fiscal,
+        AccessArea.ecommerce,
+      ],
+      active: true,
+    },
+    create: {
+      id: 'EMP-TESTE-ADMIN',
+      storeId: STORE_ID,
+      name: 'Marthi Teste Admin',
+      role: EmployeeRole.admin,
+      userEmail: email,
+      email,
+      accessAreas: [
+        AccessArea.painel,
+        AccessArea.totem,
+        AccessArea.pdv,
+        AccessArea.os,
+        AccessArea.erp,
+        AccessArea.fiscal,
+        AccessArea.ecommerce,
+      ],
+      active: true,
+    },
+  });
+
   await prisma.brand.upsert({
     where: { slug: 'apple' },
     update: { name: 'Apple' },
