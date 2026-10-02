@@ -346,6 +346,16 @@ export class RegistryService {
       orderBy: { createdAt: 'asc' },
     });
 
+    if (user.role === 'admin' || user.role === 'marthi_admin') {
+      return {
+        role: EmployeeRole.admin,
+        accessAreas: [...ALL_ACCESS_AREAS],
+        permissions: {},
+        employeeId: employee?.id,
+        sellerId: employee?.sellerId ?? undefined,
+      };
+    }
+
     if (employee) {
       const areas =
         employee.role === EmployeeRole.admin

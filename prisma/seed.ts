@@ -132,6 +132,74 @@ async function main() {
     },
   });
 
+  const adminEmail = 'marthi.tecnologia@gmail.com';
+  const adminPassHash = await bcrypt.hash('123', 12);
+  const adminUserId = `password:${adminEmail}`;
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      passwordHash: adminPassHash,
+      provider: AuthProvider.password,
+      storeId: STORE_ID,
+    },
+    create: {
+      id: adminUserId,
+      storeId: STORE_ID,
+      email: adminEmail,
+      name: 'Marthi Tecnologia',
+      picture: null,
+      provider: AuthProvider.password,
+      passwordHash: adminPassHash,
+    },
+  });
+
+  await prisma.operatorProfile.upsert({
+    where: { userId: adminUserId },
+    update: {},
+    create: {
+      userId: adminUserId,
+      displayName: 'Marthi Tecnologia',
+      role: 'Administrador',
+    },
+  });
+
+  await prisma.employee.upsert({
+    where: { id: 'EMP-MARTHI-ADMIN' },
+    update: {
+      role: EmployeeRole.admin,
+      userEmail: adminEmail,
+      email: adminEmail,
+      accessAreas: [
+        AccessArea.painel,
+        AccessArea.totem,
+        AccessArea.pdv,
+        AccessArea.os,
+        AccessArea.erp,
+        AccessArea.fiscal,
+        AccessArea.ecommerce,
+      ],
+      active: true,
+    },
+    create: {
+      id: 'EMP-MARTHI-ADMIN',
+      storeId: STORE_ID,
+      name: 'Marthi Tecnologia',
+      role: EmployeeRole.admin,
+      userEmail: adminEmail,
+      email: adminEmail,
+      accessAreas: [
+        AccessArea.painel,
+        AccessArea.totem,
+        AccessArea.pdv,
+        AccessArea.os,
+        AccessArea.erp,
+        AccessArea.fiscal,
+        AccessArea.ecommerce,
+      ],
+      active: true,
+    },
+  });
+
   await prisma.brand.upsert({
     where: { slug: 'apple' },
     update: { name: 'Apple' },
