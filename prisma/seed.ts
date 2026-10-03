@@ -444,248 +444,42 @@ async function main() {
     });
   }
 
-  await prisma.customer.upsert({
-    where: { id: 'CLI-ANA' },
-    update: {
-      name: 'Ana Souza',
-      phone: '11988880001',
-      phoneDigits: '11988880001',
-    },
-    create: {
-      id: 'CLI-ANA',
-      storeId: STORE_ID,
-      name: 'Ana Souza',
-      phone: '11988880001',
-      phoneDigits: '11988880001',
-      document: '12345678901',
-      email: 'ana@cliente.local',
-      city: 'São Paulo',
-      zipCode: '01310100',
-      street: 'Avenida Paulista',
-      number: '1000',
-      neighborhood: 'Bela Vista',
-      state: 'SP',
-      active: true,
+  // Limpeza de cadastros legados ou sintéticos de testes (mantém estritamente os logins oficiais)
+  await prisma.customer.deleteMany({
+    where: { id: { in: ['CLI-ANA', 'CLI-CARLOS'] } },
+  });
+  await prisma.employee.deleteMany({
+    where: {
+      id: { in: ['EMP-ANA', 'EMP-ADMIN', 'EMP-GILVAN-01', 'EMP-MARIANA-01'] },
     },
   });
-  await prisma.customer.upsert({
-    where: { id: 'CLI-CARLOS' },
-    update: {
-      name: 'Carlos Lima',
-      phone: '11988880002',
-      phoneDigits: '11988880002',
-    },
-    create: {
-      id: 'CLI-CARLOS',
-      storeId: STORE_ID,
-      name: 'Carlos Lima',
-      phone: '11988880002',
-      phoneDigits: '11988880002',
-      document: '98765432100',
-      email: 'carlos@cliente.local',
-      city: 'São Paulo',
-      zipCode: '04038001',
-      street: 'Rua Domingos de Morais',
-      number: '500',
-      neighborhood: 'Vila Mariana',
-      state: 'SP',
-      active: true,
+  await prisma.seller.deleteMany({
+    where: { id: { in: ['VEN-BRUNO'] } },
+  });
+  await prisma.supplier.deleteMany({
+    where: { id: { in: ['FOR-CELSUL'] } },
+  });
+  await prisma.bankAccount.deleteMany({
+    where: { id: { in: ['ACC-CAIXA', 'ACC-OPER'] } },
+  });
+  await prisma.warehouse.deleteMany({
+    where: { id: { in: ['ALX-01', 'ALX-BANC'] } },
+  });
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [
+          'marianaveigatav@gmail.com',
+          'gilvanteodo@gmail.com',
+          'gilvancellponto@gmail.com',
+        ],
+      },
     },
   });
 
   await prisma.stockItem.deleteMany({
     where: {
       id: { in: ['STK-TELA', 'STK-BATERIA', 'STK-DEMO-APARELHO'] },
-    },
-  });
-
-  const allAreas: AccessArea[] = [
-    AccessArea.totem,
-    AccessArea.pdv,
-    AccessArea.os,
-    AccessArea.erp_customers,
-    AccessArea.erp_stock,
-    AccessArea.erp_attrs,
-    AccessArea.erp_prices,
-    AccessArea.erp_payments,
-    AccessArea.erp_finance,
-    AccessArea.erp_sellers,
-    AccessArea.erp_suppliers,
-    AccessArea.erp_employees,
-    AccessArea.erp_audit,
-    AccessArea.erp_invoices,
-    AccessArea.erp_fiscal,
-    AccessArea.ecommerce,
-    AccessArea.erp_plan,
-  ];
-
-  await prisma.employee.upsert({
-    where: { id: 'EMP-ADMIN' },
-    update: {
-      userEmail: email,
-      isSystemUser: true,
-      role: EmployeeRole.admin,
-      accessAreas: allAreas,
-      active: true,
-    },
-    create: {
-      id: 'EMP-ADMIN',
-      storeId: STORE_ID,
-      name: 'Administrador da loja',
-      phone: '',
-      email,
-      document: '',
-      role: EmployeeRole.admin,
-      isSystemUser: true,
-      userEmail: email,
-      accessAreas: allAreas,
-      active: true,
-    },
-  });
-
-  await prisma.employee.upsert({
-    where: { id: 'EMP-ANA' },
-    update: {
-      name: 'Ana Costa',
-      role: EmployeeRole.operator,
-      accessAreas: [
-        AccessArea.os,
-        AccessArea.erp_stock,
-        AccessArea.erp_customers,
-      ],
-    },
-    create: {
-      id: 'EMP-ANA',
-      storeId: STORE_ID,
-      name: 'Ana Costa',
-      phone: '(24) 99900-1111',
-      email: 'ana@loja.local',
-      document: '',
-      role: EmployeeRole.operator,
-      isSystemUser: false,
-      userEmail: '',
-      accessAreas: [
-        AccessArea.os,
-        AccessArea.erp_stock,
-        AccessArea.erp_customers,
-      ],
-      active: true,
-    },
-  });
-
-  await prisma.seller.upsert({
-    where: { id: 'VEN-BRUNO' },
-    update: { name: 'Bruno Vendas', commissionPercent: 2, active: true },
-    create: {
-      id: 'VEN-BRUNO',
-      storeId: STORE_ID,
-      name: 'Bruno Vendas',
-      phone: '(24) 98800-2222',
-      email: 'bruno@loja.local',
-      document: '',
-      commissionPercent: 2,
-      active: true,
-    },
-  });
-
-  await prisma.supplier.upsert({
-    where: { id: 'FOR-CELSUL' },
-    update: { name: 'Distribuidora Celular Sul', tradeName: 'CelSul' },
-    create: {
-      id: 'FOR-CELSUL',
-      storeId: STORE_ID,
-      name: 'Distribuidora Celular Sul',
-      tradeName: 'CelSul',
-      document: '12.345.678/0001-90',
-      phone: '(21) 3333-4444',
-      email: 'compras@celsul.local',
-      city: 'Rio de Janeiro',
-      notes: 'Peças e aparelhos',
-      active: true,
-    },
-  });
-
-  await prisma.warehouse.upsert({
-    where: { id: 'ALX-01' },
-    update: {
-      name: 'Loja',
-      code: 'ALX-01',
-      address: 'Loja · depósito',
-      active: true,
-    },
-    create: {
-      id: 'ALX-01',
-      storeId: STORE_ID,
-      name: 'Loja',
-      code: 'ALX-01',
-      address: 'Loja · depósito',
-      active: true,
-    },
-  });
-
-  await prisma.warehouse.upsert({
-    where: { id: 'ALX-BANC' },
-    update: {
-      name: 'Bancada OS',
-      code: 'ALX-BANC',
-      address: 'Área técnica',
-      active: true,
-    },
-    create: {
-      id: 'ALX-BANC',
-      storeId: STORE_ID,
-      name: 'Bancada OS',
-      code: 'ALX-BANC',
-      address: 'Área técnica',
-      active: true,
-    },
-  });
-
-  await prisma.bankAccount.upsert({
-    where: { id: 'ACC-CAIXA' },
-    update: {
-      name: 'Caixa loja',
-      bank: 'Espécie',
-      agency: '—',
-      number: 'CAIXA-01',
-      type: BankAccountType.cash,
-      initialBalance: 800,
-      active: true,
-    },
-    create: {
-      id: 'ACC-CAIXA',
-      storeId: STORE_ID,
-      name: 'Caixa loja',
-      bank: 'Espécie',
-      agency: '—',
-      number: 'CAIXA-01',
-      type: BankAccountType.cash,
-      initialBalance: 800,
-      active: true,
-    },
-  });
-
-  await prisma.bankAccount.upsert({
-    where: { id: 'ACC-OPER' },
-    update: {
-      name: 'Conta operacional',
-      bank: 'Banco Exemplo',
-      agency: '0001',
-      number: '12345-6',
-      type: BankAccountType.checking,
-      initialBalance: 12500,
-      active: true,
-    },
-    create: {
-      id: 'ACC-OPER',
-      storeId: STORE_ID,
-      name: 'Conta operacional',
-      bank: 'Banco Exemplo',
-      agency: '0001',
-      number: '12345-6',
-      type: BankAccountType.checking,
-      initialBalance: 12500,
-      active: true,
     },
   });
 
