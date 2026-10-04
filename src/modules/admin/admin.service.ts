@@ -26,4 +26,3 @@ export class AdminService {
     return summarizeCompanyUsers(stores, employees, accounts);
   }
 }
-

@@ -16,4 +16,3 @@ export class AdminController {
     return this.admin.companyUsers(user);
   }
 }
-

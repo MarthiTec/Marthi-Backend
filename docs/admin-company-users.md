@@ -63,4 +63,3 @@ normalização, duplicidades, conflitos, conta ausente, criação, desativação
 reativação, remoção, autorização staff e falha do banco.
 
 Não substituem teste de integração com PostgreSQL e sessão staff real.
-

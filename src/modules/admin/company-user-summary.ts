@@ -49,4 +49,3 @@ export function summarizeCompanyUsers(stores: Store[], employees: Employee[], ac
     };
   });
 }
-

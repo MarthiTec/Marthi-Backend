@@ -80,4 +80,3 @@ test('database errors propagate without invented zero totals', async () => {
   };
   await assert.rejects(new AdminService(prisma, { get: () => 'staff@x' }).companyUsers({ email: 'staff@x' }), /database unavailable/);
 });
-

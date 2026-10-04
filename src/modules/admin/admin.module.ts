@@ -4,4 +4,3 @@ import { AdminService } from './admin.service';
 
 @Module({ controllers: [AdminController], providers: [AdminService] })
 export class AdminModule {}
-
