@@ -42,6 +42,10 @@ class EnvironmentVariables {
   AUTH_DEV_EMAIL?: string;
 
   @IsOptional()
+  @IsEmail()
+  AUTH_MARTHI_EMAIL?: string;
+
+  @IsOptional()
   @IsString()
   AUTH_DEV_PASSWORD?: string;
 
