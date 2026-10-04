@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthModule } from './modules/health/health.module';
@@ -48,6 +49,7 @@ import { KitchenModule } from './modules/kitchen/kitchen.module';
       throttlers: [{ ttl: 60_000, limit: 300 }],
     }),
     PrismaModule,
+    AdminModule,
     UsersModule,
     AuthModule,
     HealthModule,
