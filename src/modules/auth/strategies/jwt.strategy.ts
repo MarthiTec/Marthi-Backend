@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
-import { JwtPayload } from '../types/auth.types';
+import { AuthUser, JwtPayload } from '../types/auth.types';
 import { toAuthUser } from '../../users/types/public-user.type';
 
 @Injectable()
@@ -19,13 +19,31 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JwtPayload) {
-    const user = await this.usersService.findById(payload.sub);
+  async validate(payload: JwtPayload): Promise<AuthUser> {
+    try {
+      const user = await this.usersService.findById(payload.sub);
+      if (user) {
+        return toAuthUser(user);
+      }
+    } catch {
+      // MarthiDB Express users may have null store_id; Prisma User.storeId is non-null.
+    }
 
-    if (!user) {
+    if (!payload?.sub || typeof payload.email !== 'string') {
       throw new UnauthorizedException('Sessão inválida');
     }
 
-    return toAuthUser(user);
+    return {
+      id: payload.sub,
+      storeId:
+        typeof (payload as { storeId?: unknown }).storeId === 'string'
+          ? (payload as { storeId: string }).storeId
+          : '',
+      email: payload.email,
+      name: payload.name || payload.email,
+      picture: payload.picture ?? null,
+      provider: payload.provider === 'google' ? 'google' : 'password',
+      role: 'admin',
+    };
   }
 }
